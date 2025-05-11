@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+// @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const scene = new THREE.Scene();
@@ -10,6 +11,15 @@ camera.position.set(8, 2, 8);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// Responsive Handling
+window.addEventListener('resize', () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+});
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -31,6 +41,7 @@ for (let j = 0; j <= vSegments; j++) {
     const z = v;
 
     positions.push(x, y, z);
+
     const r = (v + 2) / 4;
     const g = 0.2;
     const b = 1.0 - r;
@@ -61,17 +72,15 @@ const material = new THREE.MeshPhongMaterial({
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
-// === Achsen ===
-const axes = new THREE.AxesHelper(2);
-scene.add(axes);
-
-// === Licht ===
+// Achsen und Licht
+scene.add(new THREE.AxesHelper(2));
 scene.add(new THREE.AmbientLight(0x888888));
+
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 5, 5);
 scene.add(light);
 
-// === Animation ===
+// Render-Loop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
