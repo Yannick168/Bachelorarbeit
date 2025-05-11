@@ -30,7 +30,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
 });
 
-// === OrbitControls (freie Drehung wie Trackball) ===
+// === OrbitControls ===
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
@@ -73,21 +73,26 @@ geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)
 geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 geometry.setIndex(indices);
 geometry.computeVertexNormals();
-geometry.center();
+geometry.center(); // Fläche zentrieren im Ursprung
 
-
+// === Farbige Fläche ===
 const material = new THREE.MeshPhongMaterial({
   vertexColors: true,
   side: THREE.DoubleSide
 });
-
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
+
+// === Liniennetz (Wireframe) zusätzlich ===
+const wireframe = new THREE.LineSegments(
+  new THREE.WireframeGeometry(geometry),
+  new THREE.LineBasicMaterial({ color: 0x000000 })
+);
+scene.add(wireframe);
 
 // === Achsen und Licht ===
 scene.add(new THREE.AxesHelper(2));
 scene.add(new THREE.AmbientLight(0x888888));
-
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 5, 5);
 scene.add(light);
