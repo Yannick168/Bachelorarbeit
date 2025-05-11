@@ -73,6 +73,8 @@ geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)
 geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 geometry.setIndex(indices);
 geometry.computeVertexNormals();
+geometry.center();
+
 
 const material = new THREE.MeshPhongMaterial({
   vertexColors: true,
