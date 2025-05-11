@@ -8,8 +8,8 @@ export default defineConfig({
     outDir: 'docs',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        surface: resolve(__dirname, 'parametricSurface_01.html'),
+        triangle: resolve(__dirname, 'index.html'),
+        surface_01: resolve(__dirname, 'parametricSurface_01.html'),
       }
     }
   }
