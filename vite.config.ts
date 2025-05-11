@@ -10,7 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         surface: resolve(__dirname, 'parametricSurface_01.html'),
-      },
-    },
-  },
+      }
+    }
+  }
 });
