@@ -1,6 +1,6 @@
 import { createShader, createProgram } from './shader';
-import vertexSource from '../shader/parametricSurface_01.vs.glsl?raw';
-import fragmentSource from '../shader/parametricSurface_01.fs.glsl?raw';
+import vertexSource from './shader/parametricSurface_01.vs.glsl?raw';
+import fragmentSource from './shader/parametricSurface_01.fs.glsl?raw';
 import { mat4, vec3 } from 'gl-matrix';
 
 // === Initialisierung ===
