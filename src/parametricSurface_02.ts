@@ -5,14 +5,23 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+// === Kamera exakt wie im alten WebGL-Code ===
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
 camera.position.set(8, 2, 8);
+camera.up.set(0, 1, 0);
+camera.lookAt(0, 0, 0);
 
+// === Renderer ===
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Responsive Handling
+// === Responsives Verhalten ===
 window.addEventListener('resize', () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -21,6 +30,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
 });
 
+// === OrbitControls (freie Drehung wie Trackball) ===
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
@@ -72,7 +82,7 @@ const material = new THREE.MeshPhongMaterial({
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
-// Achsen und Licht
+// === Achsen und Licht ===
 scene.add(new THREE.AxesHelper(2));
 scene.add(new THREE.AmbientLight(0x888888));
 
@@ -80,7 +90,7 @@ const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 5, 5);
 scene.add(light);
 
-// Render-Loop
+// === Render-Loop ===
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
