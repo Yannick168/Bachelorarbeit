@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de-DE">
+  <head>
+    <meta charset="utf-8" />
+    <title>Catenoid - steffen-froehlichs Webseite!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 2rem;
+        background: #fff;
+        color: #222;
+      }
+      h1 {
+        color: #025196;
+        font-size: 24px;
+      }
+      hr {
+        border: solid #025196 1px;
+        height: 1px;
+        margin: 1rem 0;
+      }
+      .content {
+        max-width: 800px;
+        margin: auto;
+        text-align: center;
+      }
+      canvas {
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="content">
+      <h1>CATENOID</h1>
+      <hr />
+      <p>
+        \[ X(u,v)=(\cos u \cosh v,\ \sin u \cosh v,\ v),\quad 0 \le u \le 2\pi,\ -2 \le v \le 2 \]
+      </p>
+
+      <!-- WebGL-Canvas ersetzt das Bild -->
+      <canvas id="glCanvas" width="600" height="400"></canvas>
+      <script type="module" src="/src/demo/parametricSurface_01.ts"></script>
+
+      <p>generated with WebGL</p>
+    </div>
+
+    <!-- MathJax für LaTeX -->
+    <script type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+  </body>
+</html>
