@@ -1,9 +1,9 @@
-import vertexSource from './shader/parametricSurface_01.vs.glsl?raw';
-import fragmentSource from './shader/parametricSurface_01.fs.glsl?raw';
-import { mat4, vec3 } from 'gl-matrix';
+import vertexSource from './shader/triangle.vs.glsl?raw';
+import fragmentSource from './shader/triangle.fs.glsl?raw';
+import { mat4 } from 'gl-matrix';
 
 // === Hilfsfunktionen ===
-function createShader(gl: WebGL2RenderingContext, type: GLenum, source: string) {
+function createShader(gl: WebGL2RenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
@@ -28,8 +28,7 @@ function createProgram(gl: WebGL2RenderingContext, vs: WebGLShader, fs: WebGLSha
 
 // === Setup ===
 const canvas = document.getElementById('glCanvas') as HTMLCanvasElement;
-const gl = canvas.getContext('webgl2');
-if (!gl) throw new Error('WebGL2 wird nicht unterstützt');
+const gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
 
 const vs = createShader(gl, gl.VERTEX_SHADER, vertexSource);
 const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
@@ -38,16 +37,16 @@ const program = createProgram(gl, vs, fs);
 gl.useProgram(program);
 gl.enable(gl.DEPTH_TEST);
 
-// === Dummy-Geometrie: Einfache Fläche als Beispiel ===
+// === Dummy-Geometrie
 const vertices = new Float32Array([
-  -1, -1, 0, 1, 0, 0, 1,
-   1, -1, 0, 0, 1, 0, 1,
-   0,  1, 0, 0, 0, 1, 1,
+  // x, y, z,    r, g, b, a
+  -1, -1, 0,    1, 0, 0, 1,
+   1, -1, 0,    0, 1, 0, 1,
+   0,  1, 0,    0, 0, 1, 1,
 ]);
 
 const indices = new Uint16Array([0, 1, 2]);
 
-// === VAO/VBO Setup ===
 const vao = gl.createVertexArray()!;
 gl.bindVertexArray(vao);
 
@@ -59,36 +58,32 @@ const ebo = gl.createBuffer()!;
 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
-// Position
 gl.enableVertexAttribArray(0);
 gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 7 * 4, 0);
-// Farbe
 gl.enableVertexAttribArray(1);
 gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 7 * 4, 3 * 4);
 
 gl.bindVertexArray(null);
 
-// === MVP-Matrix
+// === MVP
 const uMVP = gl.getUniformLocation(program, 'uMVP');
 const model = mat4.create();
 const view = mat4.create();
 const proj = mat4.create();
 const mvp = mat4.create();
 
-mat4.lookAt(view, [2, 2, 2], [0, 0, 0], [0, 1, 0]);
+mat4.lookAt(view, [2, 2, 3], [0, 0, 0], [0, 1, 0]);
 mat4.perspective(proj, Math.PI / 4, canvas.width / canvas.height, 0.1, 100);
 mat4.multiply(mvp, proj, mat4.multiply(mvp, view, model));
 gl.uniformMatrix4fv(uMVP, false, mvp);
 
-// === Render-Loop ===
+// === Render
 function render() {
   gl.clearColor(1, 1, 1, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
   gl.useProgram(program);
   gl.bindVertexArray(vao);
   gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
   requestAnimationFrame(render);
 }
-
 render();
