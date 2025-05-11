@@ -10,10 +10,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.17",
+    "@types/three": "^0.176.0",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "gl-matrix": "^3.4.3"
+    "gl-matrix": "^3.4.3",
+    "three": "^0.176.0"
   }
 }
