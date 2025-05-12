@@ -26,7 +26,7 @@ const keys = {
 };
 
 // Geschwindigkeit
-const speed = 5.0;
+const speed = 1.0;
 
 // === Event Listener ===
 window.addEventListener('mousedown', e => {
@@ -100,8 +100,8 @@ function animate() {
 
   const velocity = new THREE.Vector3();
 
-  if (keys.forward) velocity.add(direction);
-  if (keys.backward) velocity.sub(direction);
+  if (keys.forward) velocity.sub(direction);
+  if (keys.backward) velocity.add(direction);
   if (keys.left) velocity.sub(right);
   if (keys.right) velocity.add(right);
   if (keys.up) velocity.y += 1;
