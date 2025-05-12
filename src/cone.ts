@@ -17,6 +17,7 @@ document.body.appendChild(renderer.domElement);
 const controls = new PointerLockControls(camera, document.body);
 scene.add(controls.getObject());
 
+// === Klick zum Aktivieren ===
 document.body.addEventListener('click', () => {
   controls.lock();
 });
@@ -34,7 +35,7 @@ const coneMaterial = new THREE.MeshPhongMaterial({ color: 0xff5522 });
 const cone = new THREE.Mesh(coneGeometry, coneMaterial);
 scene.add(cone);
 
-// === Boden zur Orientierung ===
+// === Boden ===
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(100, 100),
   new THREE.MeshBasicMaterial({ color: 0xf0f0f0, side: THREE.DoubleSide })
@@ -76,10 +77,10 @@ window.addEventListener('keyup', (e) => {
   if (e.code === 'KeyD') keys.right = false;
 });
 
-// === Bewegung ===
-const direction = new THREE.Vector3();
+// === Bewegung in Blickrichtung ===
 const speed = 5.0;
 let prevTime = performance.now();
+const move = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
@@ -89,16 +90,18 @@ function animate() {
   prevTime = time;
 
   if (controls.isLocked) {
-    direction.set(0, 0, 0);
-    if (keys.forward) direction.z -= 1;
-    if (keys.backward) direction.z += 1;
-    if (keys.left) direction.x -= 1;
-    if (keys.right) direction.x += 1;
+    move.set(0, 0, 0);
+    if (keys.forward) move.z -= 1;
+    if (keys.backward) move.z += 1;
+    if (keys.left) move.x -= 1;
+    if (keys.right) move.x += 1;
 
-    if (direction.lengthSq() > 0) {
-      direction.normalize();
-      controls.moveRight(direction.x * speed * delta);
-      controls.moveForward(direction.z * speed * delta);
+    if (move.lengthSq() > 0) {
+      move.normalize();
+      move.applyQuaternion(camera.quaternion); // Blickrichtung
+      move.y = 0; // Nur am Boden bewegen
+      move.multiplyScalar(speed * delta);
+      controls.getObject().position.add(move);
     }
   }
 
