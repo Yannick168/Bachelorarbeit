@@ -10,6 +10,21 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
+// === Hinweis-Overlay ===
+const info = document.createElement('div');
+info.style.position = 'absolute';
+info.style.top = '50%';
+info.style.left = '50%';
+info.style.transform = 'translate(-50%, -50%)';
+info.style.padding = '12px 20px';
+info.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+info.style.color = 'white';
+info.style.fontFamily = 'sans-serif';
+info.style.fontSize = '16px';
+info.style.borderRadius = '8px';
+info.innerText = 'Klicke hier, um die Steuerung zu aktivieren';
+document.body.appendChild(info);
+
 // Kamera Startposition
 camera.position.set(0, 1.6, 5);
 
@@ -33,6 +48,7 @@ const speed = 2.0;
 window.addEventListener('mousedown', e => {
   isMouseDown = true;
   lastMouse.set(e.clientX, e.clientY);
+  if (info.parentElement) info.remove();
 });
 
 window.addEventListener('mouseup', () => {
