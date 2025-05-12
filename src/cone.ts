@@ -102,9 +102,10 @@ window.addEventListener('keyup', (e) => {
 // === Bewegung ===
 const speed = 5.0;
 let prevTime = performance.now();
-const moveHorizontal = new THREE.Vector3();
+const moveDirection = new THREE.Vector3();
 const moveVertical = new THREE.Vector3();
-const cameraDirection = new THREE.Vector3();
+const forward = new THREE.Vector3();
+const right = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
@@ -113,37 +114,39 @@ function animate() {
   prevTime = time;
 
   if (controls.isLocked) {
-    moveHorizontal.set(0, 0, 0);
+    moveDirection.set(0, 0, 0);
     moveVertical.set(0, 0, 0);
 
-    // Eingabe erfassen
-    if (keys.forward) moveHorizontal.z -= 1;
-    if (keys.backward) moveHorizontal.z += 1;
-    if (keys.left) moveHorizontal.x -= 1;
-    if (keys.right) moveHorizontal.x += 1;
+    if (keys.forward) moveDirection.z -= 1;
+    if (keys.backward) moveDirection.z += 1;
+    if (keys.left) moveDirection.x -= 1;
+    if (keys.right) moveDirection.x += 1;
     if (keys.up) moveVertical.y += 1;
     if (keys.down) moveVertical.y -= 1;
 
-    // Horizontalbewegung transformieren
-    if (moveHorizontal.lengthSq() > 0) {
-      moveHorizontal.normalize();
-      camera.getWorldDirection(cameraDirection);
-      cameraDirection.y = 0;
-      cameraDirection.normalize();
-      const angle = Math.atan2(cameraDirection.x, cameraDirection.z);
-      moveHorizontal.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-      moveHorizontal.multiplyScalar(speed * delta);
+    const player = controls.getObject();
+
+    if (moveDirection.lengthSq() > 0) {
+      moveDirection.normalize();
+
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+
+      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+      const move = new THREE.Vector3();
+      move.addScaledVector(forward, -moveDirection.z); // W/S
+      move.addScaledVector(right, moveDirection.x);    // A/D
+
+      move.normalize().multiplyScalar(speed * delta);
+      player.position.add(move);
     }
 
-    // Vertikale Bewegung
     if (moveVertical.lengthSq() > 0) {
       moveVertical.normalize().multiplyScalar(speed * delta);
+      player.position.add(moveVertical);
     }
-
-    // Bewegung anwenden
-    const player = controls.getObject();
-    player.position.add(moveHorizontal);
-    player.position.add(moveVertical);
   }
 
   renderer.render(scene, camera);
