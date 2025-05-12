@@ -8,28 +8,20 @@ scene.background = new THREE.Color(0xffffff);
 // === Kamera ===
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.6, 5);
-camera.lookAt(0, 0, 0);
 
 // === Renderer ===
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// === Controls (Maussteuerung) ===
+// === Controls ===
 const controls = new PointerLockControls(camera, document.body);
 scene.add(controls.getObject());
 
 const overlay = document.getElementById('overlay')!;
-controls.addEventListener('lock', () => {
-  overlay.style.display = 'none';
-});
-controls.addEventListener('unlock', () => {
-  overlay.style.display = 'flex';
-});
-
-document.body.addEventListener('click', () => {
-  controls.lock();
-});
+controls.addEventListener('lock', () => overlay.style.display = 'none');
+controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+document.body.addEventListener('click', () => controls.lock());
 
 // === Licht ===
 scene.add(new THREE.AmbientLight(0x888888));
@@ -38,10 +30,10 @@ light.position.set(5, 5, 5);
 scene.add(light);
 
 // === Kegel ===
-const coneGeometry = new THREE.ConeGeometry(1, 2, 32);
-coneGeometry.center();
-const coneMaterial = new THREE.MeshPhongMaterial({ color: 0xff5522 });
-const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+const cone = new THREE.Mesh(
+  new THREE.ConeGeometry(1, 2, 32).center(),
+  new THREE.MeshPhongMaterial({ color: 0xff5522 })
+);
 scene.add(cone);
 
 // === Boden ===
@@ -53,25 +45,23 @@ ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
 // === Achsenlinien ===
-const axisLength = 5;
 const axisVertices = new Float32Array([
-  0, 0, 0,  axisLength, 0, 0,
-  0, 0, 0,  0, axisLength, 0,
-  0, 0, 0,  0, 0, axisLength
+  0, 0, 0, 5, 0, 0, // x
+  0, 0, 0, 0, 5, 0, // y
+  0, 0, 0, 0, 0, 5  // z
 ]);
 const axisColors = new Float32Array([
-  1, 0, 0,  1, 0, 0,
-  0, 1, 0,  0, 1, 0,
-  0, 0, 1,  0, 0, 1
+  1, 0, 0, 1, 0, 0,
+  0, 1, 0, 0, 1, 0,
+  0, 0, 1, 0, 0, 1
 ]);
 const axisGeom = new THREE.BufferGeometry();
 axisGeom.setAttribute('position', new THREE.BufferAttribute(axisVertices, 3));
 axisGeom.setAttribute('color', new THREE.BufferAttribute(axisColors, 3));
-const axisMat = new THREE.LineBasicMaterial({ vertexColors: true });
-const axes = new THREE.LineSegments(axisGeom, axisMat);
+const axes = new THREE.LineSegments(axisGeom, new THREE.LineBasicMaterial({ vertexColors: true }));
 scene.add(axes);
 
-// === Tastatureingaben ===
+// === Tastatursteuerung ===
 const keys = {
   forward: false,
   backward: false,
@@ -80,8 +70,7 @@ const keys = {
   up: false,
   down: false
 };
-
-window.addEventListener('keydown', (e) => {
+window.addEventListener('keydown', e => {
   if (e.code === 'KeyW') keys.forward = true;
   if (e.code === 'KeyS') keys.backward = true;
   if (e.code === 'KeyA') keys.left = true;
@@ -89,8 +78,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') keys.up = true;
   if (e.code === 'ShiftLeft') keys.down = true;
 });
-
-window.addEventListener('keyup', (e) => {
+window.addEventListener('keyup', e => {
   if (e.code === 'KeyW') keys.forward = false;
   if (e.code === 'KeyS') keys.backward = false;
   if (e.code === 'KeyA') keys.left = false;
@@ -100,12 +88,12 @@ window.addEventListener('keyup', (e) => {
 });
 
 // === Bewegung ===
-const speed = 5.0;
+const speed = 5;
 let prevTime = performance.now();
-const moveDirection = new THREE.Vector3();
-const moveVertical = new THREE.Vector3();
 const forward = new THREE.Vector3();
 const right = new THREE.Vector3();
+const movement = new THREE.Vector3();
+const vertical = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
@@ -114,38 +102,38 @@ function animate() {
   prevTime = time;
 
   if (controls.isLocked) {
-    moveDirection.set(0, 0, 0);
-    moveVertical.set(0, 0, 0);
+    movement.set(0, 0, 0);
+    vertical.set(0, 0, 0);
 
-    if (keys.forward) moveDirection.z += 1;
-    if (keys.backward) moveDirection.z -= 1;
-    if (keys.left) moveDirection.x -= 1;
-    if (keys.right) moveDirection.x += 1;
-    if (keys.up) moveVertical.y += 1;
-    if (keys.down) moveVertical.y -= 1;
+    if (keys.forward) movement.z -= 1;
+    if (keys.backward) movement.z += 1;
+    if (keys.left) movement.x -= 1;
+    if (keys.right) movement.x += 1;
+    if (keys.up) vertical.y += 1;
+    if (keys.down) vertical.y -= 1;
 
     const player = controls.getObject();
 
-    if (moveDirection.lengthSq() > 0) {
-      moveDirection.normalize();
+    if (movement.lengthSq() > 0) {
+      movement.normalize();
 
+      // Blickrichtung inkl. Pitch verwenden
       camera.getWorldDirection(forward);
-      forward.y = 0;
       forward.normalize();
 
-      right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      // Rechts-Vektor (quer zur Blickrichtung)
+      right.crossVectors(forward, camera.up).normalize();
 
       const move = new THREE.Vector3();
-      move.addScaledVector(forward, moveDirection.z); // ← Korrektur hier
-      move.addScaledVector(right, moveDirection.x);
-
-      move.normalize().multiplyScalar(speed * delta);
+      move.addScaledVector(forward, movement.z);
+      move.addScaledVector(right, movement.x);
+      move.multiplyScalar(speed * delta);
       player.position.add(move);
     }
 
-    if (moveVertical.lengthSq() > 0) {
-      moveVertical.normalize().multiplyScalar(speed * delta);
-      player.position.add(moveVertical);
+    if (vertical.lengthSq() > 0) {
+      vertical.normalize().multiplyScalar(speed * delta);
+      player.position.add(vertical);
     }
   }
 
@@ -155,9 +143,7 @@ animate();
 
 // === Resize ===
 window.addEventListener('resize', () => {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  renderer.setSize(w, h);
-  camera.aspect = w / h;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
