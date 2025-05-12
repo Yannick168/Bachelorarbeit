@@ -1,7 +1,9 @@
-// Three.js Fly Camera mit Quaternion-Rotation und Bewegung in Blickrichtung
+// Three.js Fly Camera mit Quaternion-Rotation und Bewegung in Blickrichtung + Kegel
 import * as THREE from 'three';
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -9,7 +11,7 @@ document.body.appendChild(renderer.domElement);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 // Kamera Startposition
-camera.position.set(0, 0, 5);
+camera.position.set(0, 1.6, 5);
 
 // Variablen für Steuerung
 let isMouseDown = false;
@@ -25,8 +27,7 @@ const keys = {
   down: false
 };
 
-// Geschwindigkeit reduziert
-const speed = 0.5;
+const speed = 2.0;
 
 // === Event Listener ===
 window.addEventListener('mousedown', e => {
@@ -71,14 +72,41 @@ window.addEventListener('keyup', e => {
 });
 
 // === Szene-Objekte ===
-const box = new THREE.Mesh(
-  new THREE.BoxGeometry(),
-  new THREE.MeshNormalMaterial()
-);
-scene.add(box);
+const coneGeometry = new THREE.ConeGeometry(1, 2, 32);
+coneGeometry.center();
+const coneMaterial = new THREE.MeshPhongMaterial({ color: 0xff5522 });
+const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+scene.add(cone);
 
-const grid = new THREE.GridHelper(100, 100);
-scene.add(grid);
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(100, 100),
+  new THREE.MeshBasicMaterial({ color: 0xf0f0f0, side: THREE.DoubleSide })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const axisLength = 5;
+const axisVertices = new Float32Array([
+  0, 0, 0, axisLength, 0, 0,
+  0, 0, 0, 0, axisLength, 0,
+  0, 0, 0, 0, 0, axisLength
+]);
+const axisColors = new Float32Array([
+  1, 0, 0, 1, 0, 0,
+  0, 1, 0, 0, 1, 0,
+  0, 0, 1, 0, 0, 1
+]);
+const axisGeom = new THREE.BufferGeometry();
+axisGeom.setAttribute('position', new THREE.BufferAttribute(axisVertices, 3));
+axisGeom.setAttribute('color', new THREE.BufferAttribute(axisColors, 3));
+const axisMat = new THREE.LineBasicMaterial({ vertexColors: true });
+const axes = new THREE.LineSegments(axisGeom, axisMat);
+scene.add(axes);
+
+scene.add(new THREE.AmbientLight(0x888888));
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 5, 5);
+scene.add(light);
 
 // === Animation ===
 let prevTime = performance.now();
@@ -100,8 +128,8 @@ function animate() {
 
   const velocity = new THREE.Vector3();
 
-  if (keys.forward) velocity.sub(direction);
-  if (keys.backward) velocity.add(direction);
+  if (keys.forward) velocity.add(direction);
+  if (keys.backward) velocity.sub(direction);
   if (keys.left) velocity.sub(right);
   if (keys.right) velocity.add(right);
   if (keys.up) velocity.y += 1;
