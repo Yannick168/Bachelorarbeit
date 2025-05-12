@@ -117,8 +117,8 @@ function animate() {
     moveDirection.set(0, 0, 0);
     moveVertical.set(0, 0, 0);
 
-    if (keys.forward) moveDirection.z -= 1;
-    if (keys.backward) moveDirection.z += 1;
+    if (keys.forward) moveDirection.z += 1;
+    if (keys.backward) moveDirection.z -= 1;
     if (keys.left) moveDirection.x -= 1;
     if (keys.right) moveDirection.x += 1;
     if (keys.up) moveVertical.y += 1;
@@ -136,8 +136,8 @@ function animate() {
       right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
 
       const move = new THREE.Vector3();
-      move.addScaledVector(forward, -moveDirection.z); // W/S
-      move.addScaledVector(right, moveDirection.x);    // A/D
+      move.addScaledVector(forward, moveDirection.z); // ← Korrektur hier
+      move.addScaledVector(right, moveDirection.x);
 
       move.normalize().multiplyScalar(speed * delta);
       player.position.add(move);
