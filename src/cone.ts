@@ -7,16 +7,25 @@ scene.background = new THREE.Color(0xffffff);
 
 // === Kamera ===
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.6, 5); // Startposition
-camera.lookAt(0, 0, 0); // Blickrichtung zum Ursprung
+camera.position.set(0, 1.6, 5);
+camera.lookAt(0, 0, 0);
 
+// === Renderer ===
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// === Controls ===
+// === Controls (Maussteuerung) ===
 const controls = new PointerLockControls(camera, document.body);
 scene.add(controls.getObject());
+
+const overlay = document.getElementById('overlay')!;
+controls.addEventListener('lock', () => {
+  overlay.style.display = 'none';
+});
+controls.addEventListener('unlock', () => {
+  overlay.style.display = 'flex';
+});
 
 document.body.addEventListener('click', () => {
   controls.lock();
@@ -46,14 +55,14 @@ scene.add(ground);
 // === Achsenlinien ===
 const axisLength = 5;
 const axisVertices = new Float32Array([
-  0, 0, 0, axisLength, 0, 0,
-  0, 0, 0, 0, axisLength, 0,
-  0, 0, 0, 0, 0, axisLength
+  0, 0, 0,  axisLength, 0, 0,
+  0, 0, 0,  0, axisLength, 0,
+  0, 0, 0,  0, 0, axisLength
 ]);
 const axisColors = new Float32Array([
-  1, 0, 0, 1, 0, 0,
-  0, 1, 0, 0, 1, 0,
-  0, 0, 1, 0, 0, 1
+  1, 0, 0,  1, 0, 0,
+  0, 1, 0,  0, 1, 0,
+  0, 0, 1,  0, 0, 1
 ]);
 const axisGeom = new THREE.BufferGeometry();
 axisGeom.setAttribute('position', new THREE.BufferAttribute(axisVertices, 3));
@@ -62,7 +71,7 @@ const axisMat = new THREE.LineBasicMaterial({ vertexColors: true });
 const axes = new THREE.LineSegments(axisGeom, axisMat);
 scene.add(axes);
 
-// === Steuerung ===
+// === Tastatureingaben ===
 const keys = {
   forward: false,
   backward: false,
@@ -80,6 +89,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') keys.up = true;
   if (e.code === 'ShiftLeft') keys.down = true;
 });
+
 window.addEventListener('keyup', (e) => {
   if (e.code === 'KeyW') keys.forward = false;
   if (e.code === 'KeyS') keys.backward = false;
@@ -90,9 +100,11 @@ window.addEventListener('keyup', (e) => {
 });
 
 // === Bewegung ===
-const move = new THREE.Vector3();
 const speed = 5.0;
 let prevTime = performance.now();
+const moveHorizontal = new THREE.Vector3();
+const moveVertical = new THREE.Vector3();
+const cameraDirection = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
@@ -101,26 +113,41 @@ function animate() {
   prevTime = time;
 
   if (controls.isLocked) {
-    move.set(0, 0, 0);
+    moveHorizontal.set(0, 0, 0);
+    moveVertical.set(0, 0, 0);
 
-    if (keys.forward) move.z -= 1;
-    if (keys.backward) move.z += 1;
-    if (keys.left) move.x -= 1;
-    if (keys.right) move.x += 1;
-    if (keys.up) move.y += 1;
-    if (keys.down) move.y -= 1;
+    // Eingabe erfassen
+    if (keys.forward) moveHorizontal.z -= 1;
+    if (keys.backward) moveHorizontal.z += 1;
+    if (keys.left) moveHorizontal.x -= 1;
+    if (keys.right) moveHorizontal.x += 1;
+    if (keys.up) moveVertical.y += 1;
+    if (keys.down) moveVertical.y -= 1;
 
-    if (move.lengthSq() > 0) {
-      move.normalize();
-      move.applyQuaternion(camera.quaternion);
-      move.multiplyScalar(speed * delta);
-      controls.getObject().position.add(move);
+    // Horizontalbewegung transformieren
+    if (moveHorizontal.lengthSq() > 0) {
+      moveHorizontal.normalize();
+      camera.getWorldDirection(cameraDirection);
+      cameraDirection.y = 0;
+      cameraDirection.normalize();
+      const angle = Math.atan2(cameraDirection.x, cameraDirection.z);
+      moveHorizontal.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+      moveHorizontal.multiplyScalar(speed * delta);
     }
+
+    // Vertikale Bewegung
+    if (moveVertical.lengthSq() > 0) {
+      moveVertical.normalize().multiplyScalar(speed * delta);
+    }
+
+    // Bewegung anwenden
+    const player = controls.getObject();
+    player.position.add(moveHorizontal);
+    player.position.add(moveVertical);
   }
 
   renderer.render(scene, camera);
 }
-
 animate();
 
 // === Resize ===
