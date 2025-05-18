@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>2D Zykloide mit Slider</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #sliderContainer {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1;
+    }
+  </style>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/ccycloid-DhbQPxs-.js"></script>
+  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/three.module-2tefpNYM.js">
+</head>
+<body>
+  <div id="sliderContainer">
+    <input type="range" id="slider" min="0" max="20" step="0.01" value="0">
+  </div>
+  <canvas id="webgl"></canvas>
+</body>
+</html>

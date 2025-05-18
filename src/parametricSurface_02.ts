@@ -92,7 +92,7 @@ scene.add(wireframe);
 
 // === Achsen und Licht ===
 scene.add(new THREE.AxesHelper(2));
-scene.add(new THREE.AmbientLight(0x000000));
+scene.add(new THREE.AmbientLight(0x222222));
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(5, 5, 5);
 scene.add(light);
