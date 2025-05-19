@@ -2,24 +2,54 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>2D Zykloide mit Slider</title>
+  <title>Zykloide mit Eingabe und Slider</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #sliderContainer {
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      background-color: white;
+    }
+    #controls {
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(255,255,255,0.8);
+      background: rgba(255, 255, 255, 0.9);
       padding: 10px;
       border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       z-index: 1;
+    }
+    input[type="range"] {
+      width: 200px;
     }
   </style>
 </head>
 <body>
-  <div id="sliderContainer">
-    <input type="range" id="slider" min="0" max="20" step="0.01" value="0">
+  <div id="controls">
+    <label>
+      Abstand vom Mittelpunkt:
+      <input type="number" id="distanceInput" value="1" min="0" step="0.01">
+    </label>
+    <br><br>
+
+
+    <label>
+      Punktwinkel θ (in Grad):
+      <input type="range" id="angleSlider" min="0" max="360" step="1" value="0">
+      <input type="number" id="thetaInput" min="0" max="360" step="1" value="0">
+    </label>
+    <br><br>
+
+    <label>
+      Position t [0, 4π]:
+      <input type="range" id="slider" min="0" max="6.28" step="0.01" value="0">
+      <input type="number" id="tInput" value="0" min="0" max="6.28" step="0.01">
+    </label>
+    
+
   </div>
+
   <canvas id="webgl"></canvas>
   <script type="module" src="/src/cycloid.ts"></script>
 </body>

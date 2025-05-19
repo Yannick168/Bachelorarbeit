@@ -12,7 +12,7 @@ export default defineConfig({
         surface_01: resolve(__dirname, 'parametricSurface_01.html'),
         surface_02: resolve(__dirname, 'parametricSurface_02.html'),
         cone: resolve(__dirname, 'cone.html'),
-        ccycloid: resolve(__dirname, 'cycloid.html')
+        cycloid: resolve(__dirname, 'cycloid.html')
       }
     }
   }
