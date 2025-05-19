@@ -53,8 +53,8 @@ for (let j = 0; j <= vSegments; j++) {
     positions.push(x, y, z);
 
     const r = (v + 2) / 4;
-    const g = 0.2;
-    const b = 1.0 - r;
+    const g = 1.0 - r;;
+    const b = 0.1
     colors.push(r, g, b);
   }
 }
