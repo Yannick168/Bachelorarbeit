@@ -1,171 +1,123 @@
-// Three.js Fly Camera mit Quaternion-Rotation und Bewegung in Blickrichtung + Kegel
-import * as THREE from 'three';
+// === cone.ts ===
+import vertexSource from './shader/cone.vs.glsl?raw'; 
+import fragmentSource from './shader/cone.fs.glsl?raw';
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
+const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
+const gl = canvas.getContext('webgl2')!;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-document.body.appendChild(renderer.domElement);
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-// === Hinweis-Overlay ===
-const info = document.createElement('div');
-info.style.position = 'absolute';
-info.style.top = '50%';
-info.style.left = '50%';
-info.style.transform = 'translate(-50%, -50%)';
-info.style.padding = '12px 20px';
-info.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-info.style.color = 'white';
-info.style.fontFamily = 'sans-serif';
-info.style.fontSize = '16px';
-info.style.borderRadius = '8px';
-info.innerText = 'Klicke hier, um die Steuerung zu aktivieren';
-document.body.appendChild(info);
-
-// Kamera Startposition
-camera.position.set(0, 1.6, 5);
-
-// Variablen für Steuerung
-let isMouseDown = false;
-let lastMouse = new THREE.Vector2();
-const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-
-const keys = {
-  forward: false,
-  backward: false,
-  left: false,
-  right: false,
-  up: false,
-  down: false
-};
-
-const speed = 2.0;
-
-// === Event Listener ===
-window.addEventListener('mousedown', e => {
-  isMouseDown = true;
-  lastMouse.set(e.clientX, e.clientY);
-  if (info.parentElement) info.remove();
-});
-
-window.addEventListener('mouseup', () => {
-  isMouseDown = false;
-});
-
-window.addEventListener('mousemove', e => {
-  if (!isMouseDown) return;
-  const dx = e.clientX - lastMouse.x;
-  const dy = e.clientY - lastMouse.y;
-  lastMouse.set(e.clientX, e.clientY);
-
-  const sensitivity = 0.002;
-  euler.setFromQuaternion(camera.quaternion);
-  euler.y -= dx * sensitivity;
-  euler.x -= dy * sensitivity;
-  euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
-  camera.quaternion.setFromEuler(euler);
-});
-
-window.addEventListener('keydown', e => {
-  if (e.code === 'KeyW') keys.forward = true;
-  if (e.code === 'KeyS') keys.backward = true;
-  if (e.code === 'KeyA') keys.left = true;
-  if (e.code === 'KeyD') keys.right = true;
-  if (e.code === 'Space') keys.up = true;
-  if (e.code === 'ShiftLeft') keys.down = true;
-});
-
-window.addEventListener('keyup', e => {
-  if (e.code === 'KeyW') keys.forward = false;
-  if (e.code === 'KeyS') keys.backward = false;
-  if (e.code === 'KeyA') keys.left = false;
-  if (e.code === 'KeyD') keys.right = false;
-  if (e.code === 'Space') keys.up = false;
-  if (e.code === 'ShiftLeft') keys.down = false;
-});
-
-// === Szene-Objekte ===
-const coneGeometry = new THREE.ConeGeometry(1, 2, 32);
-coneGeometry.center();
-const coneMaterial = new THREE.MeshPhongMaterial({ color: 0xff5522 });
-const cone = new THREE.Mesh(coneGeometry, coneMaterial);
-scene.add(cone);
-
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(100, 100),
-  new THREE.MeshBasicMaterial({ color: 0xf0f0f0, side: THREE.DoubleSide })
-);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-
-const axisLength = 5;
-const axisVertices = new Float32Array([
-  0, 0, 0, axisLength, 0, 0,
-  0, 0, 0, 0, axisLength, 0,
-  0, 0, 0, 0, 0, axisLength
-]);
-const axisColors = new Float32Array([
-  1, 0, 0, 1, 0, 0,
-  0, 1, 0, 0, 1, 0,
-  0, 0, 1, 0, 0, 1
-]);
-const axisGeom = new THREE.BufferGeometry();
-axisGeom.setAttribute('position', new THREE.BufferAttribute(axisVertices, 3));
-axisGeom.setAttribute('color', new THREE.BufferAttribute(axisColors, 3));
-const axisMat = new THREE.LineBasicMaterial({ vertexColors: true });
-const axes = new THREE.LineSegments(axisGeom, axisMat);
-scene.add(axes);
-
-scene.add(new THREE.AmbientLight(0x888888));
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 5, 5);
-scene.add(light);
-
-// === Animation ===
-let prevTime = performance.now();
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  const time = performance.now();
-  const delta = (time - prevTime) / 1000;
-  prevTime = time;
-
-  const direction = new THREE.Vector3();
-  const right = new THREE.Vector3();
-  const up = new THREE.Vector3(0, 1, 0);
-
-  camera.getWorldDirection(direction);
-  direction.normalize();
-  right.crossVectors(direction, up).normalize();
-
-  const velocity = new THREE.Vector3();
-
-  if (keys.forward) velocity.add(direction);
-  if (keys.backward) velocity.sub(direction);
-  if (keys.left) velocity.sub(right);
-  if (keys.right) velocity.add(right);
-  if (keys.up) velocity.y += 1;
-  if (keys.down) velocity.y -= 1;
-
-  // W/S umkehren
-  velocity.negate();
-
-  if (velocity.lengthSq() > 0) {
-    velocity.normalize().multiplyScalar(speed * delta);
-    camera.position.add(velocity);
+function createShader(gl: WebGL2RenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type)!;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
   }
-
-  renderer.render(scene, camera);
+  return shader;
 }
-animate();
 
-// === Resize ===
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: string) {
+  const vs = createShader(gl, gl.VERTEX_SHADER, vsSource)!;
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource)!;
+  const program = gl.createProgram()!;
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return null;
+  }
+  return program;
+}
+
+const program = createProgram(gl, vertexSource, fragmentSource)!;
+const positionBuffer = gl.createBuffer()!;
+gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+gl.bufferData(
+  gl.ARRAY_BUFFER,
+  new Float32Array([
+    -1, -1,
+     1, -1,
+    -1,  1,
+    -1,  1,
+     1, -1,
+     1,  1]),
+  gl.STATIC_DRAW
+);
+
+const positionLocation = gl.getAttribLocation(program, "a_position");
+const uResolution = gl.getUniformLocation(program, "u_resolution");
+const uTime = gl.getUniformLocation(program, "u_time");
+const uCameraPosition = gl.getUniformLocation(program, "cameraPosition");
+const uCameraForward = gl.getUniformLocation(program, "cameraForward");
+
+// Trackball Parameter (inkl. Zoom)
+let theta = Math.PI / 4;
+let phi = Math.PI / 4;
+let radius = 4.0;
+
+let isDragging = false;
+let lastX = 0, lastY = 0;
+
+canvas.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
 });
+canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('mouseleave', () => isDragging = false);
+canvas.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  theta -= dx * 0.01;
+  phi -= dy * 0.01;
+  phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+});
+
+// Mausrad-Zoom mit Begrenzung
+canvas.addEventListener('wheel', (e) => {
+  radius += e.deltaY * 0.01;
+  radius = Math.max(2.0, Math.min(10.0, radius));
+});
+
+function render(time: number) {
+  time *= 0.001;
+
+  const camX = radius * Math.sin(phi) * Math.sin(theta);
+  const camY = radius * Math.cos(phi);
+  const camZ = radius * Math.sin(phi) * Math.cos(theta);
+  const cameraPosition = new Float32Array([camX, camY, camZ]);
+
+  const target = [0, 0.5, 0];
+  const forward = new Float32Array([
+    target[0] - camX,
+    target[1] - camY,
+    target[2] - camZ,
+  ]);
+  const len = Math.hypot(...forward);
+  for (let i = 0; i < 3; i++) forward[i] /= len;
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(program);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.enableVertexAttribArray(positionLocation);
+  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+  gl.uniform2f(uResolution, canvas.width, canvas.height);
+  gl.uniform1f(uTime, time);
+  gl.uniform3fv(uCameraPosition, cameraPosition);
+  gl.uniform3fv(uCameraForward, forward);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);

@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
-// === Kamera exakt wie im alten WebGL-Code ===
+// === Kamera ===
 const camera = new THREE.PerspectiveCamera(
   45,
   window.innerWidth / window.innerHeight,
@@ -73,17 +73,25 @@ geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)
 geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 geometry.setIndex(indices);
 geometry.computeVertexNormals();
-geometry.center(); // Fläche zentrieren im Ursprung
+geometry.center();
 
-// === Farbige Fläche ===
-const material = new THREE.MeshPhongMaterial({
+// === Zwei Materialien: Vorderseite bunt, Rückseite grau ===
+const frontMaterial = new THREE.MeshPhongMaterial({
   vertexColors: true,
-  side: THREE.DoubleSide
+  side: THREE.FrontSide
 });
-const mesh = new THREE.Mesh(geometry, material);
+const backMaterial = new THREE.MeshPhongMaterial({
+  color: 0x888888,
+  side: THREE.BackSide
+});
+
+const mesh = new THREE.Mesh(geometry, [frontMaterial, backMaterial]);
+geometry.clearGroups();
+geometry.addGroup(0, indices.length, 0); // Vorderseite
+geometry.addGroup(0, indices.length, 1); // Rückseite
 scene.add(mesh);
 
-// === Liniennetz (Wireframe) zusätzlich ===
+// === Liniennetz (Wireframe) ===
 const wireframe = new THREE.LineSegments(
   new THREE.WireframeGeometry(geometry),
   new THREE.LineBasicMaterial({ color: 0x000000 })
@@ -92,9 +100,11 @@ scene.add(wireframe);
 
 // === Achsen und Licht ===
 scene.add(new THREE.AxesHelper(2));
-scene.add(new THREE.AmbientLight(0x222222));
+scene.add(new THREE.AmbientLight(0xffffff));
+
 const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 5, 5);
+light.position.set(3, 6, 2); // schräger Blickwinkel
+light.lookAt(0, 0, 0);
 scene.add(light);
 
 // === Render-Loop ===
