@@ -3,19 +3,9 @@ precision highp float;
 out vec4 outColor;
 
 uniform vec2 u_resolution;
-uniform float u_time;
 uniform vec3 cameraPosition;
 uniform vec3 cameraForward;
 
-// Kamera → Rayrichtung
-vec3 getRayDirection(vec2 uv, vec3 camPos, vec3 camTarget, float zoom) {
-  vec3 forward = normalize(camTarget - camPos);
-  vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
-  vec3 up = cross(forward, right);
-  return normalize(uv.x * right + uv.y * up + zoom * forward);
-}
-
-// SDF für stehenden Kegel (Basis unten, Spitze oben)
 float sdf_cone(vec3 p, float height, float radius) {
   float q = length(p.xz);
   float angle = atan(radius / height);
@@ -23,13 +13,25 @@ float sdf_cone(vec3 p, float height, float radius) {
   return d;
 }
 
-// Raymarching
-float raymarch(vec3 ro, vec3 rd) {
+float map(vec3 p) {
+  p.y += 0.5; // Kegelbasis bei y=0
+  return sdf_cone(p, 1.0, 0.5);
+}
+
+vec3 getNormal(vec3 p) {
+  float e = 0.001;
+  return normalize(vec3(
+    map(p + vec3(e, 0, 0)) - map(p - vec3(e, 0, 0)),
+    map(p + vec3(0, e, 0)) - map(p - vec3(0, e, 0)),
+    map(p + vec3(0, 0, e)) - map(p - vec3(0, 0, e))
+  ));
+}
+
+float raymarch(vec3 ro, vec3 rd, out vec3 p) {
   float t = 0.0;
-  for (int i = 0; i < 100; i++) {
-    vec3 p = ro + t * rd;
-    p.y += 0.5; // Kegel steht aufrecht mit Basis bei y = 0
-    float d = sdf_cone(p, 1.0, 0.5);
+  for (int i = 0; i < 128; i++) {
+    p = ro + t * rd;
+    float d = map(p);
     if (d < 0.001) return t;
     if (t > 50.0) break;
     t += d;
@@ -37,45 +39,32 @@ float raymarch(vec3 ro, vec3 rd) {
   return -1.0;
 }
 
-// Normale per Finite Differences
-vec3 getNormal(vec3 p) {
-  float eps = 0.001;
-  vec2 e = vec2(1.0, -1.0) * eps;
-  return normalize(vec3(
-    sdf_cone(p + e.xyy, 1.0, 0.5) - sdf_cone(p + e.yyy, 1.0, 0.5),
-    sdf_cone(p + e.yxy, 1.0, 0.5) - sdf_cone(p + e.yyy, 1.0, 0.5),
-    sdf_cone(p + e.yyx, 1.0, 0.5) - sdf_cone(p + e.yyy, 1.0, 0.5)
-  ));
-}
-
 void main() {
   vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
   uv.x *= u_resolution.x / u_resolution.y;
 
-  vec3 camPos = cameraPosition;
-  vec3 camTarget = camPos + cameraForward;
-  vec3 rd = getRayDirection(uv, camPos, camTarget, 1.0);
+  vec3 ro = cameraPosition;
+  vec3 forward = normalize(cameraForward);
+  vec3 right = normalize(cross(vec3(0, 1, 0), forward));
+  vec3 up = cross(forward, right);
+  vec3 rd = normalize(uv.x * right + uv.y * up + forward);
 
-  float t = raymarch(camPos, rd);
+  vec3 p;
+  float t = raymarch(ro, rd, p);
+
   if (t > 0.0) {
-    vec3 p = camPos + rd * t;
-    vec3 shiftedP = p + vec3(0.0, 0.5, 0.0); // gleiche Verschiebung wie in raymarch
-    vec3 normal = getNormal(shiftedP);
-
-    // Blinn-Phong Licht
+    vec3 n = getNormal(p);
     vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-    vec3 viewDir = normalize(camPos - p);
+    vec3 viewDir = normalize(ro - p);
     vec3 halfDir = normalize(lightDir + viewDir);
 
-    float diff = max(dot(normal, lightDir), 0.0);
-    float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
+    float diff = max(dot(n, lightDir), 0.0);
+    float spec = pow(max(dot(n, halfDir), 0.0), 64.0);
+    vec3 baseColor = vec3(1.0, 0.0, 0.0); // rot
 
-    vec3 ambient = vec3(0.1);
-    vec3 baseColor = vec3(0.8, 0.4, 0.1); // orangebraun
-    vec3 color = ambient + diff * baseColor + spec * vec3(1.0);
-
+    vec3 color = 0.1 + diff * baseColor + spec * vec3(1.0);
     outColor = vec4(color, 1.0);
   } else {
-    outColor = vec4(0.0); // Hintergrund schwarz
+    outColor = vec4(1.0); // Hintergrund weiß
   }
 }

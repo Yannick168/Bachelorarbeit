@@ -1,0 +1,5 @@
+- implizite Flächen mit three.js
+- parametrische Flächen Morphen mit schieberegler (Catenoid-Helicoid isometry)
+- Surface Evolver (https://kenbrakke.com/evolver/examples/default.htm)
+- mobile Version
+grid breakpoints (bootstrap)
