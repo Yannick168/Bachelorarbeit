@@ -17,6 +17,7 @@
     // Empfang von Daten aus dem übergeordneten Fenster
     window.addEventListener('message', (event) => {
       const data = event.data;
+      console.log("Empfangen im iframe:", event.data);
       if (data?.type === 'update') {
         const { t, theta, distance } = data;
         window.updateCycloid?.(t, theta, distance);
