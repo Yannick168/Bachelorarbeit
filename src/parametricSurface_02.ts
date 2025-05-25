@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { resizeToMaxViewportPerspective } from './utils/resizeViewport'; // relativ zur Datei
+
+
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
@@ -17,36 +20,12 @@ const container = document.getElementById('webgl-container')!;
 const canvas = renderer.domElement;
 container.appendChild(canvas);
 
-// === Resize auf sichtbare Canvas-Größe
-function resizeToMaxViewport() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
 
-  const desiredAspect = 16 / 9;
+resizeToMaxViewportPerspective(renderer, camera, canvas);
 
-  let width = vw;
-  let height = vw / desiredAspect;
-
-  if (height > vh) {
-    height = vh;
-    width = vh * desiredAspect;
-  }
-
-  renderer.setSize(width, height, false);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-
-  // Canvas manuell zentrieren
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-  canvas.style.position = 'absolute';
-  canvas.style.top = '50%';
-  canvas.style.left = '50%';
-  canvas.style.transform = 'translate(-50%, -50%)';
-}
-
-resizeToMaxViewport();
-window.addEventListener('resize', resizeToMaxViewport);
+window.addEventListener('resize', () => {
+  resizeToMaxViewportPerspective(renderer, camera, canvas);
+});
 
 
 // === OrbitControls ===

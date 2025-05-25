@@ -1,30 +1,18 @@
 import * as THREE from 'three';
+import { resizeToMaxViewportOrthographic } from './utils/resizeViewport';
+
+const canvas = document.getElementById('webgl-container') as HTMLCanvasElement;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0xffffff);
 
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.z = 10;
 
-const canvas = document.getElementById('webgl') as HTMLCanvasElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0xffffff);
-
-// HTML Elemente
-const distanceInput = document.getElementById('distanceInput') as HTMLInputElement;
-const slider = document.getElementById('slider') as HTMLInputElement;
-const tInput = document.getElementById('tInput') as HTMLInputElement;
-const angleSlider = document.getElementById('angleSlider') as HTMLInputElement;
-const thetaInput = document.getElementById('thetaInput') as HTMLInputElement;
-
 const r = 1;
-let distanceFactor = parseFloat(distanceInput.value);
 const maxT = Math.PI * 4;
 const tStep = 0.05;
-
-function circleCenter(t: number): THREE.Vector3 {
-  return new THREE.Vector3(r * t, r, -0.01);
-}
 
 let pathLine: THREE.Line;
 let circleLine: THREE.Line;
@@ -33,34 +21,31 @@ let lineToPoint: THREE.Line;
 let groundLine: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
+let currentT = 0;
+let currentTheta = 0;
+let currentDistance = 1;
+
+function circleCenter(t: number): THREE.Vector3 {
+  return new THREE.Vector3(r + r * t, r, -0.01); // Start bei x = r
+}
+
 function createSceneObjects() {
   [pathLine, circleLine, pointMesh, lineToPoint, groundLine].forEach(obj => {
     if (obj) scene.remove(obj);
   });
 
-  // Kamera an Seitenverhältnis anpassen
-  const aspect = window.innerWidth / window.innerHeight;
-  const sceneWidth = r * (maxT + 1); // Zykloidenbreite + Puffer
-  const sceneHeight = sceneWidth / aspect;
-
-camera.left = camera.left = -r * 2;
-camera.right = sceneWidth;
-;
-  camera.right = sceneWidth;
-  camera.top = sceneHeight / 2;
-  camera.bottom = -sceneHeight / 2;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  const sceneWidth = r * (maxT + 2); // Platz für linken und rechten Rand
+  resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth);
 
   // Bodenlinie
   const groundGeom = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(camera.left, 0, 0),
-    new THREE.Vector3(sceneWidth, 0, 0)
+    new THREE.Vector3(camera.right, 0, 0)
   ]);
   groundLine = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(groundLine);
 
-  // Dynamische Pfadlinie
+  // Zykloidenpfad
   const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
   pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
   scene.add(pathLine);
@@ -87,28 +72,20 @@ camera.right = sceneWidth;
   lineToPoint = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(lineToPoint);
 
-  // Max-Werte setzen
-  slider.max = maxT.toFixed(2);
-  tInput.max = maxT.toFixed(2);
-
-  updateScene(parseFloat(slider.value));
+  updateScene(currentT, currentTheta, currentDistance);
 }
 
-function updateScene(t: number) {
-  const thetaDeg = parseFloat(thetaInput.value);
-  const theta = (thetaDeg * Math.PI) / 180;
-  distanceFactor = parseFloat(distanceInput.value);
+function updateScene(t: number, thetaDeg: number, distanceFactor: number) {
+  currentT = t;
+  currentTheta = thetaDeg;
+  currentDistance = distanceFactor;
 
-  // Eingaben synchronisieren
-  slider.value = t.toFixed(2);
-  tInput.value = t.toFixed(2);
-  angleSlider.value = thetaDeg.toFixed(0);
+  const theta = (thetaDeg * Math.PI) / 180;
 
   const center = circleCenter(t);
   circleLine.position.copy(center);
   circleLine.rotation.z = -t;
 
-  // 0° soll oben sein → -π/2 verschieben
   const angle = -t + theta - Math.PI / 2;
   const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(r * distanceFactor);
   pointMesh.position.copy(center.clone().add(offset));
@@ -116,11 +93,11 @@ function updateScene(t: number) {
   const linePoints = [center.clone().setZ(0), pointMesh.position];
   (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
-  // Zykloidenpfad aktualisieren
+  // Zykloidenpfad
   pathPoints = [];
-  for (let currentT = 0; currentT <= t; currentT += tStep) {
-    const cx = r * currentT;
-    const a = -currentT + theta - Math.PI / 2;
+  for (let current = 0; current <= t; current += tStep) {
+    const cx = r + r * current;
+    const a = -current + theta - Math.PI / 2;
     const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
     const pos = new THREE.Vector3(cx, r, 0).add(offset);
     pathPoints.push(pos);
@@ -130,34 +107,26 @@ function updateScene(t: number) {
   pathLine.geometry = pathGeom;
 }
 
-// Event-Handler
-function updateFromSlider() {
-  updateScene(parseFloat(slider.value));
-}
-function updateFromTInput() {
-  updateScene(parseFloat(tInput.value));
-}
-function updateFromThetaSlider() {
-  thetaInput.value = angleSlider.value;
-  updateScene(parseFloat(slider.value));
-}
-function updateFromThetaInput() {
-  angleSlider.value = thetaInput.value;
-  updateScene(parseFloat(slider.value));
-}
+// Nachrichtenempfang vom äußeren Widget
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (data?.type === 'update') {
+    const { t, theta, distance } = data;
+    updateScene(t, theta, distance);
+  }
+});
 
-// Event-Listener
-slider.addEventListener('input', updateFromSlider);
-tInput.addEventListener('input', updateFromTInput);
-angleSlider.addEventListener('input', updateFromThetaSlider);
-thetaInput.addEventListener('input', updateFromThetaInput);
-distanceInput.addEventListener('input', () => updateScene(parseFloat(slider.value)));
 window.addEventListener('resize', () => createSceneObjects());
 
-// Initialisierung
 createSceneObjects();
+
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 animate();
+
+// Extern aufrufbar für Debug/Integration
+(window as any).updateCycloid = (t: number, theta: number, distance: number) => {
+  updateScene(t, theta, distance);
+};
