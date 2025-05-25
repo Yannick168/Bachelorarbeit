@@ -10,17 +10,11 @@ const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.z = 10;
 
-// HTML-Steuerelemente
-const distanceInput = document.getElementById('distanceInput') as HTMLInputElement;
-const slider = document.getElementById('slider') as HTMLInputElement;
-const tInput = document.getElementById('tInput') as HTMLInputElement;
-const angleSlider = document.getElementById('angleSlider') as HTMLInputElement;
-const thetaInput = document.getElementById('thetaInput') as HTMLInputElement;
-
 const r = 1;
 const maxT = Math.PI * 4;
 const tStep = 0.05;
-let distanceFactor = parseFloat(distanceInput.value);
+let distanceFactor = 1;
+let currentTheta = 0;
 
 let pathLine: THREE.Line;
 let circleLine: THREE.Line;
@@ -30,7 +24,7 @@ let groundLine: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
 function circleCenter(t: number): THREE.Vector3 {
-  return new THREE.Vector3(r + r * t, r, -0.01); // linker Rand bei x = 0
+  return new THREE.Vector3(r + r * t, r, -0.01);
 }
 
 function createSceneObjects() {
@@ -38,8 +32,7 @@ function createSceneObjects() {
     if (obj) scene.remove(obj);
   });
 
-  distanceFactor = parseFloat(distanceInput.value);
-  const sceneWidth = r * (maxT + 2); // +2 für linker + rechter Rand
+  const sceneWidth = r * (maxT + 2);
   resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth);
 
   // Bodenlinie
@@ -50,7 +43,7 @@ function createSceneObjects() {
   groundLine = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(groundLine);
 
-  // Zykloidenpfad
+  // Pfadlinie
   const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
   pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
   scene.add(pathLine);
@@ -77,22 +70,11 @@ function createSceneObjects() {
   lineToPoint = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(lineToPoint);
 
-  // Max-Werte setzen
-  slider.max = maxT.toFixed(2);
-  tInput.max = maxT.toFixed(2);
-
-  updateScene(parseFloat(slider.value));
+  updateScene(0);
 }
 
 function updateScene(t: number) {
-  const thetaDeg = parseFloat(thetaInput.value);
-  const theta = (thetaDeg * Math.PI) / 180;
-  distanceFactor = parseFloat(distanceInput.value);
-
-  // Eingaben synchronisieren
-  slider.value = t.toFixed(2);
-  tInput.value = t.toFixed(2);
-  angleSlider.value = thetaDeg.toFixed(0);
+  const theta = (currentTheta * Math.PI) / 180;
 
   // Kreisposition
   const center = circleCenter(t);
@@ -108,7 +90,7 @@ function updateScene(t: number) {
   const linePoints = [center.clone().setZ(0), pointMesh.position];
   (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
-  // Zykloidenpfad zeichnen
+  // Pfad berechnen
   pathPoints = [];
   for (let currentT = 0; currentT <= t; currentT += tStep) {
     const cx = r + r * currentT;
@@ -122,18 +104,7 @@ function updateScene(t: number) {
   pathLine.geometry = pathGeom;
 }
 
-// Event-Handler
-slider.addEventListener('input', () => updateScene(parseFloat(slider.value)));
-tInput.addEventListener('input', () => updateScene(parseFloat(tInput.value)));
-angleSlider.addEventListener('input', () => {
-  thetaInput.value = angleSlider.value;
-  updateScene(parseFloat(slider.value));
-});
-thetaInput.addEventListener('input', () => {
-  angleSlider.value = thetaInput.value;
-  updateScene(parseFloat(slider.value));
-});
-distanceInput.addEventListener('input', () => updateScene(parseFloat(slider.value)));
+// Resize-Handling
 window.addEventListener('resize', () => createSceneObjects());
 
 // Start
@@ -144,12 +115,9 @@ function animate() {
 }
 animate();
 
-
+// Globale Methode für postMessage-Anbindung
 (window as any).updateCycloid = (t: number, theta: number, distance: number) => {
-  distanceInput.value = distance.toString();
-  thetaInput.value = theta.toString();
-  angleSlider.value = theta.toString();
-  slider.value = t.toString();
-  tInput.value = t.toString();
+  currentTheta = theta;
+  distanceFactor = distance;
   updateScene(t);
 };
