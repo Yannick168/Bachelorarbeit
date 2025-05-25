@@ -6,34 +6,51 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
 // === Kamera ===
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
-);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
 camera.position.set(8, 2, 8);
 camera.up.set(0, 1, 0);
 camera.lookAt(0, 0, 0);
 
 // === Renderer ===
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+const container = document.getElementById('webgl-container')!;
+const canvas = renderer.domElement;
+container.appendChild(canvas);
 
-// 🔧 Canvas im Bootstrap-Container einfügen!
-document.getElementById('webgl-container')!.appendChild(renderer.domElement);
+// === Resize auf sichtbare Canvas-Größe
+function resizeToMaxViewport() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
 
-// === Responsives Verhalten ===
-window.addEventListener('resize', () => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  renderer.setSize(width, height);
+  const desiredAspect = 16 / 9;
+
+  let width = vw;
+  let height = vw / desiredAspect;
+
+  if (height > vh) {
+    height = vh;
+    width = vh * desiredAspect;
+  }
+
+  renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-});
+
+  // Canvas manuell zentrieren
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  canvas.style.position = 'absolute';
+  canvas.style.top = '50%';
+  canvas.style.left = '50%';
+  canvas.style.transform = 'translate(-50%, -50%)';
+}
+
+resizeToMaxViewport();
+window.addEventListener('resize', resizeToMaxViewport);
+
 
 // === OrbitControls ===
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
 // === Parametrische Fläche ===
@@ -93,23 +110,22 @@ geometry.addGroup(0, indices.length, 0); // Vorderseite
 geometry.addGroup(0, indices.length, 1); // Rückseite
 scene.add(mesh);
 
-// === Liniennetz (Wireframe) ===
+// === Wireframe
 const wireframe = new THREE.LineSegments(
   new THREE.WireframeGeometry(geometry),
   new THREE.LineBasicMaterial({ color: 0x000000 })
 );
 scene.add(wireframe);
 
-// === Achsen und Licht ===
+// === Licht
 scene.add(new THREE.AxesHelper(2));
 scene.add(new THREE.AmbientLight(0xffffff));
-
 const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(3, 6, 2); // schräger Blickwinkel
+light.position.set(3, 6, 2);
 light.lookAt(0, 0, 0);
 scene.add(light);
 
-// === Render-Loop ===
+// === Render-Loop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
