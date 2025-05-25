@@ -15,6 +15,7 @@
   <!-- Message-Handler für externe Steuerung -->
   <script>
     window.addEventListener('message', (event) => {
+      console.log('Empfangen im iframe:', event.data); // DEBUG!
       const data = event.data;
       if (data?.type === 'update') {
         const { t, theta, distance } = data;
