@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zykloide Visualisierung</title>
+  <title>Zykloide Canvas</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <canvas id="webgl-container"></canvas>
 
-  <!-- Kompiliertes cycloid.js-Skript -->
   <script type="module" src="/src/cycloid.ts"></script>
 
-  <!-- Message-Handler für externe Steuerung -->
   <script>
+    // Empfang von Daten aus dem übergeordneten Fenster
     window.addEventListener('message', (event) => {
-      console.log('Empfangen im iframe:', event.data); // DEBUG!
       const data = event.data;
+      console.log("Empfangen im iframe:", event.data);
       if (data?.type === 'update') {
         const { t, theta, distance } = data;
         window.updateCycloid?.(t, theta, distance);

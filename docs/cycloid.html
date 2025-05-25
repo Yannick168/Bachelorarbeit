@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Zykloide Visualisierung</title>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/cycloid-DZXC71GS.js"></script>
+  <title>Zykloide Canvas</title>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/cycloid-BKH-k0R4.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
-  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-DN-gXKM6.js">
-  <link rel="stylesheet" crossorigin href="/Bachelorarbeit/assets/resizeViewport-B88_nolC.css">
+  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-C_UaWHga.js">
+  <link rel="stylesheet" crossorigin href="/Bachelorarbeit/assets/resizeViewport-9onRHXn3.css">
 </head>
 <body>
   <canvas id="webgl-container"></canvas>
 
-  <!-- Kompiliertes cycloid.js-Skript -->
 
-  <!-- Message-Handler für externe Steuerung -->
   <script>
+    // Empfang von Daten aus dem übergeordneten Fenster
     window.addEventListener('message', (event) => {
-      console.log('Empfangen im iframe:', event.data); // DEBUG!
       const data = event.data;
       if (data?.type === 'update') {
         const { t, theta, distance } = data;
