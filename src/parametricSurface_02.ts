@@ -19,7 +19,9 @@ camera.lookAt(0, 0, 0);
 // === Renderer ===
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+
+// 🔧 Canvas im Bootstrap-Container einfügen!
+document.getElementById('webgl-container')!.appendChild(renderer.domElement);
 
 // === Responsives Verhalten ===
 window.addEventListener('resize', () => {
@@ -53,8 +55,8 @@ for (let j = 0; j <= vSegments; j++) {
     positions.push(x, y, z);
 
     const r = (v + 2) / 4;
-    const g = 1.0 - r;;
-    const b = 0.1
+    const g = 1.0 - r;
+    const b = 0.1;
     colors.push(r, g, b);
   }
 }
