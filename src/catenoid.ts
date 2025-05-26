@@ -10,8 +10,8 @@ scene.background = new THREE.Color(0xffffff);
 
 // === Kamera ===
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-camera.position.set(8, 2, 8);
-camera.up.set(0, 1, 0);
+camera.position.set(9, 9, 9);
+camera.up.set(0, 0, 1);
 camera.lookAt(0, 0, 0);
 
 // === Renderer ===
