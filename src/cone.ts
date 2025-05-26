@@ -11,11 +11,13 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 // Scene and Camera
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0, 3); // Center view on origin
+camera.position.set(3, 1.5, 4); // Position mit gutem Blick auf Spitze
 
 // Controls
 const controls = new TrackballControls(camera, renderer.domElement);
-controls.target.set(0, 0.75, 0); // Look at center of cone (1.5 / 2)
+controls.target.set(0, 1.5, 0);         // 🎯 Ziel: Spitze des Kegels
+controls.noPan = true;                  // 🔒 Deaktiviert Verschiebung
+controls.staticMoving = true;          // Stabilisiert Bewegung
 controls.update();
 
 // Fullscreen quad geometry
@@ -25,8 +27,8 @@ const geometry = new THREE.PlaneGeometry(2, 2);
 const uniforms = {
   iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
   iCameraPosition: { value: new THREE.Vector3() },
-  iCameraMatrix: { value: new THREE.Matrix4() },
-  iViewMatrix: { value: new THREE.Matrix4() }
+  iViewMatrix: { value: new THREE.Matrix4() },
+  iProjectionMatrix: { value: new THREE.Matrix4() }
 };
 
 // Vertex Shader
@@ -35,21 +37,25 @@ void main() {
   gl_Position = vec4(position, 1.0);
 }`;
 
-// Fragment Shader
+// Fragment Shader (unverändert außer ggf. MAX_DIST/MAX_STEPS)
 const fragmentShader = `
 precision highp float;
 uniform vec2 iResolution;
 uniform vec3 iCameraPosition;
 uniform mat4 iViewMatrix;
+uniform mat4 iProjectionMatrix;
 
-#define MAX_STEPS 100
-#define MAX_DIST 100.0
+#define MAX_STEPS 200
+#define MAX_DIST 1000.0
 #define SURF_DIST 0.001
 
 float sdCone(vec3 p, float h, float r) {
-  p.y -= h / 2.0; // Shift cone center to origin
+  p.y += h / 2.0;
+  float tanTheta = r / h;
   float q = length(p.xz);
-  return max(dot(vec2(r, -h), vec2(q, p.y)) / sqrt(r*r + h*h), -p.y);
+  float side = dot(vec2(tanTheta, -1.0), vec2(q, p.y));
+  float base = -p.y;
+  return max(side / sqrt(tanTheta * tanTheta + 1.0), base);
 }
 
 float map(vec3 p) {
@@ -80,10 +86,12 @@ vec3 getNormal(vec3 p) {
 }
 
 vec3 getRayDir(vec2 uv) {
-  vec3 forward = normalize((inverse(iViewMatrix) * vec4(0.0, 0.0, -1.0, 0.0)).xyz);
-  vec3 right   = normalize((inverse(iViewMatrix) * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
-  vec3 up      = normalize((inverse(iViewMatrix) * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
-  return normalize(uv.x * right + uv.y * up + forward);
+  vec4 rayClip = vec4(uv, -1.0, 1.0);
+  vec4 rayEye = inverse(iProjectionMatrix) * rayClip;
+  rayEye.z = -1.0;
+  rayEye.w = 0.0;
+  vec4 rayWorld = inverse(iViewMatrix) * rayEye;
+  return normalize(rayWorld.xyz);
 }
 
 void main() {
@@ -94,13 +102,17 @@ void main() {
   vec3 rd = getRayDir(uv);
 
   float dist = raymarch(ro, rd);
-  vec3 col = vec3(1.0); // Hintergrund weiß
+  vec3 col = vec3(1.0); // weißer Hintergrund
 
   if (dist > 0.0 && dist < MAX_DIST) {
     vec3 p = ro + rd * dist;
     vec3 n = getNormal(p);
     float lighting = -dot(rd, n);
-    col = vec3(lighting);
+    if (abs(n.y - 1.0) < 0.1) {
+      col = vec3(0.0, 0.3, 1.0); // blauer Boden
+    } else {
+      col = vec3(lighting);
+    }
   }
 
   gl_FragColor = vec4(col, 1.0);
@@ -131,6 +143,7 @@ function animate() {
   controls.update();
   uniforms.iCameraPosition.value.copy(camera.position);
   uniforms.iViewMatrix.value.copy(camera.matrixWorldInverse);
+  uniforms.iProjectionMatrix.value.copy(camera.projectionMatrix);
   renderer.render(scene, camera);
 }
 animate();
