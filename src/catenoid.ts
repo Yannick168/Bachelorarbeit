@@ -34,8 +34,8 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
 // === Parametrische Fläche ===
-const uSegments = 100;
-const vSegments = 100;
+const uSegments = 30;
+const vSegments = 30;
 const geometry = new THREE.BufferGeometry();
 const positions: number[] = [];
 const colors: number[] = [];
