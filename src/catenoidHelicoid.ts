@@ -2,41 +2,39 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { resizeToMaxViewportPerspective } from './utils/resizeViewport';
 
+// Szene und Kamera
 const scene = new THREE.Scene();
-scene.add(new THREE.AxesHelper(2)); // ⬅️ XYZ-Achsen anzeigen
+scene.add(new THREE.AxesHelper(2)); // XYZ-Achsen
 
-const camera = new THREE.PerspectiveCamera(90, 2, 0.1, 100);
-camera.position.set(5, 2, 4); // ⬅️ Catenoid-ähnliche Kameraposition
-camera.up.set(0, 0, 1);
+const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 100);
+camera.position.set(8, 2, 5);
 camera.lookAt(0, 0, 0);
+camera.up.set(0, 0, 1);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setClearColor(0xffffff); // ⬅️ Weißer Hintergrund
-document.body.appendChild(renderer.domElement);
+// Renderer und Canvas
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas') as HTMLCanvasElement, antialias: true });
+renderer.setClearColor(0xffffff); // Weißer Hintergrund
 resizeToMaxViewportPerspective(renderer, camera, renderer.domElement);
 
+// Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+// Licht
 const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 2, 3);
+light.position.set(1, 2, 3); // ← set() verändert die Position, gibt aber einen Vector3 zurück
 scene.add(light);
+
 scene.add(new THREE.AmbientLight(0x999999));
 
+// Fläche
 const uSegments = 100;
 const vSegments = 100;
+let alpha = 0.0;
 
 let geometry: THREE.BufferGeometry;
 let mesh: THREE.Mesh;
 let wireframe: THREE.LineSegments;
-
-const alphaSlider = document.getElementById('alphaRange') as HTMLInputElement;
-let alpha = parseFloat(alphaSlider.value);
-
-alphaSlider.addEventListener('input', () => {
-  alpha = parseFloat(alphaSlider.value);
-  updateGeometry();
-});
 
 function updateGeometry() {
   if (geometry) geometry.dispose();
@@ -51,23 +49,15 @@ function updateGeometry() {
   for (let j = 0; j <= vSegments; j++) {
     const v = -2 + 4 * (j / vSegments);
     for (let i = 0; i <= uSegments; i++) {
-      const u = 0 + 2 * Math.PI * (i / uSegments);
+      const u = 2 * Math.PI * (i / uSegments);
 
       const cosα = Math.cos(alpha);
       const sinα = Math.sin(alpha);
 
-      // Parametrisierung
-      
+      // Parametrisierung (Übergang Catenoid ↔ Helicoid)
       const x = Math.cos(u) * Math.cosh(v) * cosα + v * Math.cos(u) * sinα;
       const y = Math.sin(u) * Math.cosh(v) * cosα + v * Math.sin(u) * sinα;
-      const z = v * cosα + 1 * u * sinα;
-      
-
-      /*
-      const x = Math.cosh(u) * Math.cos(v) * cosα + Math.sinh(u) * Math.sin(u) * sinα;
-      const y = Math.cosh(u) * Math.sin(v) * cosα - Math.sinh(u) * Math.cos(v) * sinα;
-      const z = u * cosα + v * sinα;
-      */
+      const z = v * cosα + 0.5 * u * sinα;
 
       positions.push(x, y, z);
 
@@ -105,20 +95,21 @@ function updateGeometry() {
 
 updateGeometry();
 
+// PostMessage-Schnittstelle für externen Slider (Jimdo)
+(window as any).updateCatenoidHelicoid = (newAlpha: number) => {
+  alpha = newAlpha;
+  updateGeometry();
+};
+
+// Resize
 window.addEventListener('resize', () => {
   resizeToMaxViewportPerspective(renderer, camera, renderer.domElement);
 });
 
+// Renderloop
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 }
 animate();
-
-window.addEventListener('message', (event) => {
-  if (event.data?.type === 'alpha' && typeof event.data.alpha === 'number') {
-    alpha = event.data.alpha;
-    updateGeometry();
-  }
-});

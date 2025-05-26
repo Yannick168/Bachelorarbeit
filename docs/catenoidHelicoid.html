@@ -1,24 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Catenoid–Helicoid Surface</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #ffffff;
-    }
-    canvas {
-      display: block;
-    }
-  </style>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/catenoidHelicoid-Cn1k2Tk-.js"></script>
+  <title>Catenoid-Helicoid Visualisierung</title>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/catenoidHelicoid-BkVaZsmk.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-DegO-5sx.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/OrbitControls-D19lvDDC.js">
+  <link rel="stylesheet" crossorigin href="/Bachelorarbeit/assets/style-CRlaTV5G.css">
 </head>
-<body>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <!-- WebGL-TypeScript-Modul -->
+
+  <!-- Externe Steuerung (postMessage vom Slider) -->
+  <script>
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (data?.type === 'alpha') {
+        const { alpha } = data;
+        window.updateCatenoidHelicoid?.(alpha);
+      }
+    });
+  </script>
 </body>
 </html>
