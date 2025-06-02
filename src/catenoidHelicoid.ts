@@ -99,9 +99,17 @@ function updateGeometry() {
       const cosα = Math.cos(alpha);
       const sinα = Math.sin(alpha);
 
-      const x = Math.cos(u) * Math.cosh(v) * cosα + v * Math.cos(u) * sinα;
-      const y = Math.sin(u) * Math.cosh(v) * cosα + v * Math.sin(u) * sinα;
-      const z = v * cosα + 0.5 * u * sinα;
+      //const x = Math.cos(u) * Math.cosh(v) * cosα + v * Math.cos(u) * sinα;
+      //const y = Math.sin(u) * Math.cosh(v) * cosα + v * Math.sin(u) * sinα;
+      //const z = v * cosα + 0.5 * u * sinα;
+
+      //const x = Math.cos(v) * Math.cosh(u) * cosα + Math.sin(v) * Math.sinh(u) * sinα;
+      //const y = Math.sin(v) * Math.cosh(u) * cosα - Math.cos(v) * Math.sinh(u) * sinα;
+      //const z = u * cosα + v * sinα;
+
+      const x = Math.cos(u) * Math.cosh(v) * cosα + Math.sin(u) * Math.sinh(v) * sinα;
+      const y = Math.sin(u) * Math.cosh(v) * cosα - Math.cos(u) * Math.sinh(v) * sinα;
+      const z = v * cosα + u * sinα;
 
       positions[index + 0] = x;
       positions[index + 1] = y;
