@@ -3,3 +3,6 @@
 - Surface Evolver (https://kenbrakke.com/evolver/examples/default.htm)
 - mobile Version
 grid breakpoints (bootstrap)
+
+- epitrochoid
+- catenoid hypertrocoid isometry

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Epizykloide Visualisierung</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    canvas { display: block; }
+    input[type="range"] {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label>
+      Großer Radius R:
+      <input type="number" id="inputR" value="1" step="0.1" min="0.1" />
+    </label>
+    <label>
+      Kleiner Radius r:
+      <input type="number" id="inputr" value="1" step="0.1" min="0.1" />
+    </label>
+    <label>
+      Parameter Theta: <span id="tValue">0.00</span>
+      <input type="range" id="sliderT" min="0" max="18.85" step="0.01" value="0" />
+    </label>
+    <button id="applyButton">Übernehmen</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- WebGL-Skript -->
+  <script type="module" src="/src/epitrochoid.ts"></script>
+
+  <!-- Steuerung -->
+  <script>
+    const inputR = document.getElementById('inputR');
+    const inputr = document.getElementById('inputr');
+    const sliderT = document.getElementById('sliderT');
+    const tValue = document.getElementById('tValue');
+    const button = document.getElementById('applyButton');
+
+    let currentR = parseFloat(inputR.value);
+    let currentr = parseFloat(inputr.value);
+
+    // Wenn Slider bewegt wird, update aufrufen
+    sliderT.addEventListener('input', () => {
+      const t = parseFloat(sliderT.value);
+      tValue.textContent = t.toFixed(2);
+      window.updateEpitrochoid?.(t, currentR, currentr);
+    });
+
+    // Wenn Button gedrückt wird, R/r übernehmen und neu zeichnen
+    button.addEventListener('click', () => {
+      currentR = parseFloat(inputR.value);
+      currentr = parseFloat(inputr.value);
+      const t = parseFloat(sliderT.value);
+      window.updateEpitrochoid?.(t, currentR, currentr);
+    });
+
+    // Optional: update per postMessage
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (data?.type === 'updateEpitrochoid') {
+        const { t, R, r } = data;
+        currentR = R ?? currentR;
+        currentr = r ?? currentr;
+        window.updateEpitrochoid?.(t, currentR, currentr);
+      }
+    });
+  </script>
+</body>
+</html>

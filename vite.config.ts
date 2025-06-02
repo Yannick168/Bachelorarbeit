@@ -13,7 +13,9 @@ export default defineConfig({
         catenoid: resolve(__dirname, 'catenoid.html'),
         catenoidHelicoid: resolve(__dirname, 'catenoidHelicoid.html'),
         cone: resolve(__dirname, 'cone.html'),
-        cycloid: resolve(__dirname, 'cycloid.html')
+        cycloid: resolve(__dirname, 'cycloid.html'),
+        epitrochoid: resolve(__dirname, 'epitrochoid.html'),
+        surface_evolver: resolve(__dirname, 'surface_evolver.html')
       }
     }
   }

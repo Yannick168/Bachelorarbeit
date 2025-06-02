@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resizeToMaxViewportOrthographic } from './utils/resizeViewport';
+import { resizeCenteredOrthographic } from './utils/resizeViewport';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -10,47 +10,48 @@ const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.z = 10;
 
-const r = 1;
-const maxT = Math.PI * 4;
+let R = 1;
+let r = 1;
 const tStep = 0.05;
-let distanceFactor = 1;
-let currentTheta = 0;
 
 let pathLine: THREE.Line;
 let circleLine: THREE.Line;
+let bigCircleLine: THREE.Line;
 let pointMesh: THREE.Mesh;
 let lineToPoint: THREE.Line;
-let groundLine: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
-function circleCenter(t: number): THREE.Vector3 {
-  return new THREE.Vector3(r + r * t, r, -0.01);
+function epicycloid(t: number): THREE.Vector3 {
+  const k = R / r;
+  const x = (R + r) * Math.cos(t) - r * Math.cos((1 + k) * t);
+  const y = (R + r) * Math.sin(t) - r * Math.sin((1 + k) * t);
+  return new THREE.Vector3(x, y, 0);
 }
 
 function createSceneObjects() {
-  [pathLine, circleLine, pointMesh, lineToPoint, groundLine].forEach(obj => {
+  [pathLine, circleLine, bigCircleLine, pointMesh, lineToPoint].forEach(obj => {
     if (obj) scene.remove(obj);
   });
 
-  const sceneWidth = r * (maxT + 2);
-  resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth, 16/9, false);
+  const curveMaxRadius = R + 2 * r;
+  const margin = 0.2;
+  const visibleRadius = curveMaxRadius * (1 + margin);
+  resizeCenteredOrthographic(renderer, camera, canvas, visibleRadius);
 
-  // Bodenlinie
-  const groundGeom = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(camera.left, 0, 0),
-    new THREE.Vector3(camera.right, 0, 0)
-  ]);
-  groundLine = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
-  scene.add(groundLine);
+  const segments = 128;
 
-  // Pfadlinie
-  const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
-  pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
-  scene.add(pathLine);
+  // Großer Kreis mit Radius R
+  const bigCirclePoints: THREE.Vector3[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    bigCirclePoints.push(new THREE.Vector3(Math.cos(angle) * R, Math.sin(angle) * R, 0));
+  }
+  const bigCircleGeom = new THREE.BufferGeometry().setFromPoints(bigCirclePoints);
+  bigCircleLine = new THREE.LineLoop(bigCircleGeom, new THREE.LineBasicMaterial({ color: 0xaaaaaa }));
+  scene.add(bigCircleLine);
 
-  // Kreislinie
+  // Rollender Kreis mit Radius r
   const circlePoints: THREE.Vector3[] = [];
-  const segments = 64;
   for (let i = 0; i <= segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
     circlePoints.push(new THREE.Vector3(Math.cos(angle) * r, Math.sin(angle) * r, 0));
@@ -59,13 +60,18 @@ function createSceneObjects() {
   circleLine = new THREE.LineLoop(circleGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(circleLine);
 
+  // Pfadlinie
+  const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
+  pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
+  scene.add(pathLine);
+
   // Roter Punkt
   const pointGeom = new THREE.CircleGeometry(0.1 * r, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   scene.add(pointMesh);
 
-  // Linie vom Mittelpunkt zum Punkt
+  // Linie vom Kreiszentrum zum Punkt
   const lineGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
   lineToPoint = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(lineToPoint);
@@ -74,40 +80,28 @@ function createSceneObjects() {
 }
 
 function updateScene(t: number) {
-  const theta = (currentTheta * Math.PI) / 180;
-
-  // Kreisposition
-  const center = circleCenter(t);
+  const k = R / r;
+  const center = new THREE.Vector3((R + r) * Math.cos(t), (R + r) * Math.sin(t), -0.01);
   circleLine.position.copy(center);
-  circleLine.rotation.z = -t;
+  circleLine.rotation.z = -(1 + k) * t;
 
-  // Punktposition
-  const angle = -t + theta + Math.PI / 2;
-  const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(r * distanceFactor);
-  pointMesh.position.copy(center.clone().add(offset));
+  const pos = epicycloid(t);
+  pointMesh.position.copy(pos);
 
-  // Linie zum Punkt
-  const linePoints = [center.clone().setZ(0), pointMesh.position];
+  const linePoints = [center.clone().setZ(0), pos];
   (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
-  // Pfad berechnen
   pathPoints = [];
   for (let currentT = 0; currentT <= t; currentT += tStep) {
-    const cx = r + r * currentT;
-    const a = -currentT + theta - Math.PI / 2;
-    const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
-    const pos = new THREE.Vector3(cx, r, 0).add(offset);
-    pathPoints.push(pos);
+    pathPoints.push(epicycloid(currentT));
   }
   const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
   pathLine.geometry.dispose();
   pathLine.geometry = pathGeom;
 }
 
-// Resize-Handling
 window.addEventListener('resize', () => createSceneObjects());
 
-// Start
 createSceneObjects();
 function animate() {
   requestAnimationFrame(animate);
@@ -115,9 +109,9 @@ function animate() {
 }
 animate();
 
-// Globale Methode für postMessage-Anbindung
-(window as any).updateCycloid = (t: number, theta: number, distance: number) => {
-  currentTheta = theta;
-  distanceFactor = distance;
+(window as any).updateEpitrochoid = (t: number, newR?: number, newr?: number) => {
+  if (typeof newR === 'number') R = newR;
+  if (typeof newr === 'number') r = newr;
+  createSceneObjects();
   updateScene(t);
 };
