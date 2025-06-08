@@ -8,14 +8,14 @@ export default defineConfig({
     outDir: 'docs',
     rollupOptions: {
       input: {
-        triangle: resolve(__dirname, 'index.html'),
+        triangle: resolve(__dirname, 'src/triangle/index.html'),
         surface_01: resolve(__dirname, 'parametricSurface_01.html'),
         catenoid: resolve(__dirname, 'src/catenoid/catenoid.html'),
-        catenoidHelicoid: resolve(__dirname, 'catenoidHelicoid.html'),
-        cone: resolve(__dirname, 'cone.html'),
-        cycloid: resolve(__dirname, 'cycloid.html'),
-        epitrochoid: resolve(__dirname, 'epitrochoid.html'),
-        surface_evolver: resolve(__dirname, 'surface_evolver.html')
+        catenoidHelicoid: resolve(__dirname, 'src/catenoidHelicoid/catenoidHelicoid.html'),
+        cone: resolve(__dirname, 'src/cone/cone.html'),
+        cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
+        epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
+        surface_evolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html')
       }
     }
   }

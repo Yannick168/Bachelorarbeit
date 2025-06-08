@@ -1,5 +1,5 @@
-import vertexSource from './shader/triangle.vs.glsl?raw';
-import fragmentSource from './shader/triangle.fs.glsl?raw';
+import vertexSource from '../shader/triangle.vs.glsl?raw';
+import fragmentSource from '../shader/triangle.fs.glsl?raw';
 import { mat4 } from 'gl-matrix';
 
 // === Hilfsfunktionen ===

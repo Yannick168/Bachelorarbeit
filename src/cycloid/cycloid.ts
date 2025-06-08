@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resizeToMaxViewportOrthographic } from './utils/resizeViewport';
+import { resizeToMaxViewportOrthographic } from '../utils/resizeViewport';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });

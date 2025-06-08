@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { resizeToMaxViewportPerspective } from './utils/resizeViewport.js';
+import { resizeToMaxViewportPerspective } from '../utils/resizeViewport.js';
 
 // Renderer setup
 const renderer = new THREE.WebGLRenderer();
