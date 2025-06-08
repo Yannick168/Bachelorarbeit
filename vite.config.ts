@@ -10,7 +10,7 @@ export default defineConfig({
       input: {
         triangle: resolve(__dirname, 'index.html'),
         surface_01: resolve(__dirname, 'parametricSurface_01.html'),
-        catenoid: resolve(__dirname, 'catenoid.html'),
+        catenoid: resolve(__dirname, 'src/catenoid/catenoid.html'),
         catenoidHelicoid: resolve(__dirname, 'catenoidHelicoid.html'),
         cone: resolve(__dirname, 'cone.html'),
         cycloid: resolve(__dirname, 'cycloid.html'),

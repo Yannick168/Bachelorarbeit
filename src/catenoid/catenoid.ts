@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { resizeToMaxViewportPerspective } from './utils/resizeViewport'; // relativ zur Datei
+import { resizeToMaxViewportPerspective } from '../utils/resizeViewport'; // relativ zur Datei
 
 
 
