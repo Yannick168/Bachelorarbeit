@@ -6,3 +6,6 @@ grid breakpoints (bootstrap)
 
 - epitrochoid
 - catenoid hypertrocoid isometry
+
+- Linzenzen angeben (three.js, mathjax, vite, etc.), npm license-report
+- kubische flächen
