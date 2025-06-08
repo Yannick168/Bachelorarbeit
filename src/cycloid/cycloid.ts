@@ -94,7 +94,7 @@ function updateScene(t: number) {
   pathPoints = [];
   for (let currentT = 0; currentT <= t; currentT += tStep) {
     const cx = r + r * currentT;
-    const a = -currentT + theta - Math.PI / 2;
+    const a = -currentT - theta - Math.PI / 2;
     const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
     const pos = new THREE.Vector3(cx, r, 0).add(offset);
     pathPoints.push(pos);
