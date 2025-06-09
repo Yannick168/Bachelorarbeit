@@ -24,7 +24,7 @@ let groundLine: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
 function circleCenter(t: number): THREE.Vector3 {
-  return new THREE.Vector3(r + r * t, 0, -0.01);
+  return new THREE.Vector3(r + r * t, r, -0.01);
 }
 
 function createSceneObjects() {
@@ -96,7 +96,7 @@ function updateScene(t: number) {
     const cx = r + r * currentT;
     const a = -currentT - theta - Math.PI / 2;
     const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
-    const pos = new THREE.Vector3(cx, 0, 0).add(offset);
+    const pos = new THREE.Vector3(cx, r, 0).add(offset);
     pathPoints.push(pos);
   }
   const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
