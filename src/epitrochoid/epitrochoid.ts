@@ -34,7 +34,7 @@ function createSceneObjects() {
   });
 
   const curveMaxRadius = R + 2 * r;
-  const margin = 5;
+  const margin = 1;
   const visibleRadius = curveMaxRadius * (1 + margin);
   resizeToMaxViewportOrthographic(renderer, camera, canvas, visibleRadius * 2, 16 / 9, true);
 
