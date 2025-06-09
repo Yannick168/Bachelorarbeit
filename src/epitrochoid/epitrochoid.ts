@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { resizeCenteredOrthographic } from '../utils/resizeViewport';
+import { resizeToMaxViewportOrthographic } from '../utils/resizeViewport';
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -34,9 +34,10 @@ function createSceneObjects() {
   });
 
   const curveMaxRadius = R + 2 * r;
-  const margin = 0.2;
+  const margin = 5;
   const visibleRadius = curveMaxRadius * (1 + margin);
-  resizeCenteredOrthographic(renderer, camera, canvas, visibleRadius);
+  resizeToMaxViewportOrthographic(renderer, camera, canvas, visibleRadius * 2, 16 / 9, true);
+
 
   const segments = 128;
 
