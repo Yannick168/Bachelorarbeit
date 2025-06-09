@@ -81,24 +81,26 @@ function updateScene(t: number) {
   circleLine.position.copy(center);
   circleLine.rotation.z = -t;
 
-  // Punktposition
-  const angle = -t + theta + Math.PI / 2;
-  const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(r * distanceFactor);
-  pointMesh.position.copy(center.clone().add(offset));
+// Punktposition
+const angle = -t + theta + Math.PI / 2; // Punkt startet oben
+const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(r * distanceFactor);
+pointMesh.position.copy(center.clone().add(offset));
 
-  // Linie zum Punkt
-  const linePoints = [center.clone().setZ(0), pointMesh.position];
-  (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
+// Linie zum Punkt
+const linePoints = [center.clone().setZ(0), pointMesh.position];
+(lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
-  // Pfad berechnen
-  pathPoints = [];
-  for (let currentT = 0; currentT <= t; currentT += tStep) {
-    const cx = r + r * currentT;
-    const a = -currentT - theta - Math.PI / 2;
-    const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
-    const pos = new THREE.Vector3(cx, r, 0).add(offset);
-    pathPoints.push(pos);
-  }
+// Pfad berechnen
+pathPoints = [];
+for (let currentT = 0; currentT <= t; currentT += tStep) {
+  const cx = r + r * currentT;
+  const a = -currentT + theta + Math.PI / 2;  // <- HIER geändert
+  const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
+  const pos = new THREE.Vector3(cx, r, 0).add(offset);
+  pathPoints.push(pos);
+}
+
+
   const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
   pathLine.geometry.dispose();
   pathLine.geometry = pathGeom;
