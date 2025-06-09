@@ -68,12 +68,21 @@ function createInitialGeometry() {
   geometry.setAttribute('color', colorAttr);
   geometry.setIndex(indices);
 
-  const material = new THREE.MeshPhongMaterial({
-    vertexColors: true,
-    side: THREE.DoubleSide
-  });
+// === Zwei Materialien: Vorderseite bunt, Rückseite grau ===
+const frontMaterial = new THREE.MeshPhongMaterial({
+  vertexColors: true,
+  side: THREE.FrontSide
+});
+const backMaterial = new THREE.MeshPhongMaterial({
+  color: 0x888888,
+  side: THREE.BackSide
+});
 
-  mesh = new THREE.Mesh(geometry, material);
+
+  mesh =  new THREE.Mesh(geometry, [frontMaterial, backMaterial]);
+  geometry.clearGroups();
+  geometry.addGroup(0, indices.length, 0); // Vorderseite
+  geometry.addGroup(0, indices.length, 1); // Rückseite
   scene.add(mesh);
 
   wireframe = new THREE.LineSegments(
