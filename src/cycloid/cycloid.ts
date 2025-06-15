@@ -119,5 +119,6 @@ animate();
 (window as any).updateCycloid = (t: number, theta: number, distance: number) => {
   currentTheta = theta;
   distanceFactor = distance;
+  createSceneObjects();
   updateScene(t);
 };
