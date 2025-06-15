@@ -27,11 +27,11 @@ controls.enableDamping = true;
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(1, 2, 3);
 scene.add(light);
-scene.add(new THREE.AmbientLight(0x999999));
+scene.add(new THREE.AmbientLight(0xfffffff,4));
 
 // Parameter
-const uSegments = 100;
-const vSegments = 100;
+const uSegments = 30;
+const vSegments = 30;
 let alpha = 0.0;
 
 // Buffer-Große Variablen
@@ -68,12 +68,21 @@ function createInitialGeometry() {
   geometry.setAttribute('color', colorAttr);
   geometry.setIndex(indices);
 
-  const material = new THREE.MeshPhongMaterial({
-    vertexColors: true,
-    side: THREE.DoubleSide
-  });
+// === Zwei Materialien: Vorderseite bunt, Rückseite grau ===
+const frontMaterial = new THREE.MeshPhongMaterial({
+  vertexColors: true,
+  side: THREE.FrontSide
+});
+const backMaterial = new THREE.MeshPhongMaterial({
+  color: 0x888888,
+  side: THREE.BackSide
+});
 
-  mesh = new THREE.Mesh(geometry, material);
+
+  mesh =  new THREE.Mesh(geometry, [frontMaterial, backMaterial]);
+  geometry.clearGroups();
+  geometry.addGroup(0, indices.length, 0); // Vorderseite
+  geometry.addGroup(0, indices.length, 1); // Rückseite
   scene.add(mesh);
 
   wireframe = new THREE.LineSegments(
@@ -118,14 +127,23 @@ function updateGeometry() {
       const r = (v + 2) / 4;
       colors[index + 0] = r;
       colors[index + 1] = 1.0 - r;
-      colors[index + 2] = 0.5;
+      colors[index + 2] = 0.1;
     }
   }
 
-  positionAttr.needsUpdate = true;
-  colorAttr.needsUpdate = true;
-  geometry.computeVertexNormals();
-  geometry.center();
+positionAttr.needsUpdate = true;
+colorAttr.needsUpdate = true;
+geometry.computeVertexNormals();
+
+// Wireframe aktualisieren
+scene.remove(wireframe);
+wireframe.geometry.dispose();
+wireframe = new THREE.LineSegments(
+  new THREE.WireframeGeometry(geometry),
+  new THREE.LineBasicMaterial({ color: 0x000000 })
+);
+scene.add(wireframe);
+
 }
 
 //  externe Anbindung für Jimdo-Slider
