@@ -80,7 +80,6 @@ function createSceneObjects() {
   updateScene(0.01);
 }
 
-
 function updateScene(t: number) {
   const k = R / r;
   const center = new THREE.Vector3((R - r) * Math.cos(t), (R - r) * Math.sin(t), -0.01);
@@ -105,13 +104,15 @@ function updateScene(t: number) {
 window.addEventListener('resize', () => createSceneObjects());
 
 createSceneObjects();
+
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 animate();
 
-(window as any).updateEpitrochoid = (t: number, newR?: number, newr?: number) => {
+// Neues API: updateHypotrochoid statt updateEpitrochoid
+(window as any).updateHypotrochoid = (t: number, newR?: number, newr?: number) => {
   if (typeof newR === 'number') R = newR;
   if (typeof newr === 'number') r = newr;
   createSceneObjects();
