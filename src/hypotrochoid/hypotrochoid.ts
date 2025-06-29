@@ -10,9 +10,9 @@ const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.z = 10;
 
-let R = 5;
-let r = 2;
-let d = 2;
+let R = 4;
+let r = 1;
+let d = 1;
 const tStep = 0.05;
 
 let pathLine: THREE.Line;
