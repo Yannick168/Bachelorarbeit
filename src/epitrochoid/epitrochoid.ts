@@ -12,6 +12,7 @@ camera.position.z = 10;
 
 let R = 1;
 let r = 1;
+let d = 1;
 const tStep = 0.05;
 
 let pathLine: THREE.Line;
@@ -21,10 +22,10 @@ let pointMesh: THREE.Mesh;
 let lineToPoint: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
-function epicycloid(t: number): THREE.Vector3 {
+function epitrochoid(t: number): THREE.Vector3 {
   const k = R / r;
-  const x = (R + r) * Math.cos(t) - r * Math.cos((1 + k) * t);
-  const y = (R + r) * Math.sin(t) - r * Math.sin((1 + k) * t);
+  const x = (R + r) * Math.cos(t) - d * Math.cos((1 + k) * t);
+  const y = (R + r) * Math.sin(t) - d * Math.sin((1 + k) * t);
   return new THREE.Vector3(x, y, 0);
 }
 
@@ -33,15 +34,14 @@ function createSceneObjects() {
     if (obj) scene.remove(obj);
   });
 
-  const curveMaxRadius = R + 2 * r;
-  const margin = 1;
+  const curveMaxRadius = R + d + r;
+  const margin = 0.2;
   const visibleRadius = curveMaxRadius * (1 + margin);
   resizeToMaxViewportOrthographic(renderer, camera, canvas, visibleRadius * 2, 16 / 9, true);
 
-
   const segments = 128;
 
-  // Großer Kreis mit Radius R
+  // Großer Kreis
   const bigCirclePoints: THREE.Vector3[] = [];
   for (let i = 0; i <= segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
@@ -51,7 +51,7 @@ function createSceneObjects() {
   bigCircleLine = new THREE.LineLoop(bigCircleGeom, new THREE.LineBasicMaterial({ color: 0xaaaaaa }));
   scene.add(bigCircleLine);
 
-  // Rollender Kreis mit Radius r
+  // Rollender Kreis
   const circlePoints: THREE.Vector3[] = [];
   for (let i = 0; i <= segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
@@ -61,19 +61,21 @@ function createSceneObjects() {
   circleLine = new THREE.LineLoop(circleGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(circleLine);
 
-  // Pfadlinie
+  // Pfad
   const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
   pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
   scene.add(pathLine);
 
-  // Roter Punkt
+  // Zeichenstift
   const pointGeom = new THREE.CircleGeometry(0.1 * r, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   scene.add(pointMesh);
 
-  // Linie vom Kreiszentrum zum Punkt
-  const lineGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  // Linie zum Zeichenstift
+  const lineGeom = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(), new THREE.Vector3()
+  ]);
   lineToPoint = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(lineToPoint);
 
@@ -82,11 +84,12 @@ function createSceneObjects() {
 
 function updateScene(t: number) {
   const k = R / r;
+
   const center = new THREE.Vector3((R + r) * Math.cos(t), (R + r) * Math.sin(t), -0.01);
   circleLine.position.copy(center);
   circleLine.rotation.z = -(1 + k) * t;
 
-  const pos = epicycloid(t);
+  const pos = epitrochoid(t);
   pointMesh.position.copy(pos);
 
   const linePoints = [center.clone().setZ(0), pos];
@@ -94,7 +97,7 @@ function updateScene(t: number) {
 
   pathPoints = [];
   for (let currentT = 0; currentT <= t; currentT += tStep) {
-    pathPoints.push(epicycloid(currentT));
+    pathPoints.push(epitrochoid(currentT));
   }
   const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
   pathLine.geometry.dispose();
@@ -104,15 +107,17 @@ function updateScene(t: number) {
 window.addEventListener('resize', () => createSceneObjects());
 
 createSceneObjects();
+
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
 }
 animate();
 
-(window as any).updateEpitrochoid = (t: number, newR?: number, newr?: number) => {
+(window as any).updateEpitrochoid = (t: number, newR?: number, newr?: number, newd?: number) => {
   if (typeof newR === 'number') R = newR;
   if (typeof newr === 'number') r = newr;
+  if (typeof newd === 'number') d = newd;
   createSceneObjects();
   updateScene(t);
 };

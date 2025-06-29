@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Epizykloide</title>
+  <title>Epitrochoid</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -11,13 +11,12 @@
 
   <script type="module" src="./epitrochoid.ts"></script>
 
-  <!-- Nur Message-Handler -->
   <script>
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data?.type === "updateEpitrochoid") {
-        const { t, R, r } = data;
-        window.updateEpitrochoid?.(t, R, r);
+        const { t, R, r, d } = data;
+        window.updateEpitrochoid?.(t, R, r, d);
       }
     });
   </script>
