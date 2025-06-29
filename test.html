@@ -1,0 +1,171 @@
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Cycloid
+            </h3>
+        </div>
+        $$ x_p(\theta) = (\theta + sin(\theta))R $$ $$ y_p(\theta) = (1 + sin(\theta))R $$
+        <div class="col-12 col-md-4 mb-4">
+            <div class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                    <label for="distanceInput" class="form-label">Abstand zum Mittelpunkt</label> <input type="number" id="distanceInput" class="form-control" value="1" min="0" step="0.01" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="angleSlider" class="form-label">Punktwinkel θ (in Grad)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="angleSlider" class="form-range" min="0" max="360" step="1" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 5rem;">
+                            <input type="number" id="thetaInput" class="form-control" min="0" max="360" step="1" value="0" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="slider" class="form-label">Position t [0, 4π]</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="slider" class="form-range" min="0" max="12.56" step="0.01" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 6rem;">
+                            <input type="number" id="tInput" class="form-control" min="0" max="12.56" step="0.01" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
+            <div class="ratio ratio-16x9" style="max-width: 700px; width: 100%;">
+                <iframe id="cycloidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="cycloidFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+    const cycloidIframe = document.getElementById('cycloidFrame');
+
+    // Cache-Busting: dynamische src-URL setzen
+    cycloidIframe.src = "https://yannick168.github.io/Bachelorarbeit/src/cycloid/cycloid.html?v=" + Date.now();
+
+    function sendUpdate() {
+      const t = parseFloat(document.getElementById('tInput').value);
+      const theta = parseFloat(document.getElementById('thetaInput').value);
+      const distance = parseFloat(document.getElementById('distanceInput').value);
+
+      if (cycloidIframe && !isNaN(t) && !isNaN(theta) && !isNaN(distance)) {
+        cycloidIframe.contentWindow.postMessage({ type: 'update', t, theta, distance }, '*');
+      }
+    }
+
+    function syncSliderAndInput(sliderId, inputId) {
+      const slider = document.getElementById(sliderId);
+      const input = document.getElementById(inputId);
+
+      slider.addEventListener('input', () => {
+        input.value = slider.value;
+        sendUpdate();
+      });
+
+      input.addEventListener('input', () => {
+        slider.value = input.value;
+        sendUpdate();
+      });
+    }
+
+    syncSliderAndInput('slider', 'tInput');
+    syncSliderAndInput('angleSlider', 'thetaInput');
+    document.getElementById('distanceInput').addEventListener('input', sendUpdate);
+/*]]>*/
+</script>
+
+
+-------------------
+
+<!-- UI im HTML-Widget -->
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12 col-md-4 mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    Epitrochoid
+                </h3>
+            </div>
+
+            <div class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                    <label for="inputR" class="form-label">Radius R</label> <input type="number" id="inputR" class="form-control" value="1" min="0.1" step="0.1" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="inputr" class="form-label">Radius r</label> <input type="number" id="inputr" class="form-control" value="1" min="0.1" step="0.1" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="sliderT" class="form-label">Position t [0, 6π]</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="sliderT" class="form-range" min="0" max="18.85" step="0.01" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 6rem;">
+                            <input type="number" id="tInput" class="form-control" min="0" max="18.85" step="0.01" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
+            <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
+                <iframe id="epitrochoidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="epitrochoidFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+  const frame = document.getElementById('epitrochoidFrame');
+  const inputR = document.getElementById('inputR');
+  const inputr = document.getElementById('inputr');
+  const sliderT = document.getElementById('sliderT');
+  const tInput = document.getElementById('tInput');
+  const button = document.getElementById('applyButton');
+
+  // Cache-Busting beim Laden
+  frame.src = "https://yannick168.github.io/Bachelorarbeit/src/epitrochoid/epitrochoid.html?v=" + Date.now();
+
+  function sendUpdate() {
+    const t = parseFloat(tInput.value);
+    const R = parseFloat(inputR.value);
+    const r = parseFloat(inputr.value);
+
+    if (!isNaN(t) && !isNaN(R) && !isNaN(r)) {
+      frame.contentWindow?.postMessage({ type: 'updateEpitrochoid', t, R, r }, '*');
+    }
+  }
+
+  function syncSliderAndInput(slider, input) {
+    slider.addEventListener('input', () => {
+      input.value = slider.value;
+      sendUpdate();
+    });
+    input.addEventListener('input', () => {
+      slider.value = input.value;
+      sendUpdate();
+    });
+  }
+
+  syncSliderAndInput(sliderT, tInput);
+  inputR.addEventListener('input', sendUpdate);
+  inputr.addEventListener('input', sendUpdate);
+
+/*]]>*/
+</script>
