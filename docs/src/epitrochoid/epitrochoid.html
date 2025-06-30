@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Epizykloide</title>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/epitrochoid-CHGjbbqa.js"></script>
+  <title>Epitrochoid</title>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/epitrochoid-C6B4c9Qy.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/three.module-DMYFJ2Iq.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-DpCXGKS2.js">
@@ -12,15 +12,14 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
-
 
-  <!-- Nur Message-Handler -->
+
   <script>
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data?.type === "updateEpitrochoid") {
-        const { t, R, r } = data;
-        window.updateEpitrochoid?.(t, R, r);
+        const { t, R, r, d } = data;
+        window.updateEpitrochoid?.(t, R, r, d);
       }
     });
   </script>

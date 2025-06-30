@@ -15,6 +15,7 @@ export default defineConfig({
         cone: resolve(__dirname, 'src/cone/cone.html'),
         cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
         epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
+        hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
         surface_evolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html')
       }
     }
