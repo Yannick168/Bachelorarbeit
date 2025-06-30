@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kubische Fläche Renderer</title>
+  <style>
+    body { margin: 0; }
+    #formulaInput { position: absolute; top: 1rem; left: 1rem; z-index: 10; width: 300px; }
+  </style>
+</head>
+<body>
+  <input
+    id="formulaInput"
+    type="text"
+    value="x^3 + y^3 + z^3 - 3*x*y*z"
+    class="form-control"
+  />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.js"></script>
+  <script type="module" src="./cubicSurface.ts"></script>
+</body>
+</html>
