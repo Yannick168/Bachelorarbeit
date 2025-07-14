@@ -17,7 +17,8 @@ export default defineConfig({
         epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
         hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
         surface_evolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
-        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html')
+        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html'),
+        test: resolve(__dirname, 'src/test/test.html')
       }
     }
   }
