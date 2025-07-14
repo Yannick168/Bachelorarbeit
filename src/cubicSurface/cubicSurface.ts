@@ -1,97 +1,241 @@
-import * as THREE from "three";
+// test.ts
+import vertexSource from './cubicSurface.vs.glsl?raw';
+import fragmentTemplate from './cubicSurface.fs.glsl?raw';
+import * as THREE from 'three';
 
-declare const math: any; // weil wir math.js über CDN laden
+const canvas = document.createElement('canvas');
+canvas.width = 800;
+canvas.height = 600;
+document.body.appendChild(canvas);
 
-let scene: THREE.Scene;
-let camera: THREE.PerspectiveCamera;
-let renderer: THREE.WebGLRenderer;
-let mesh: THREE.Points | undefined;
+const gl = canvas.getContext('webgl2')!;
+if (!gl) throw new Error('WebGL2 nicht unterstützt');
 
-init();
-renderIsosurface();
+const renderer = new THREE.WebGLRenderer({ canvas });
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 10000);
+camera.position.set(0, 0, 3);
 
-document.getElementById("formulaInput")!.addEventListener("change", () => {
-  renderIsosurface();
+// =====================
+// Eingabesteuerung
+// =====================
+const keysPressed = new Set<string>();
+let yaw = 0;
+let pitch = 0;
+let isMouseDown = false;
+
+document.addEventListener('keydown', e => keysPressed.add(e.key.toLowerCase()));
+document.addEventListener('keyup', e => keysPressed.delete(e.key.toLowerCase()));
+
+// Pointer Lock (Maussteuerung)
+canvas.requestPointerLock = canvas.requestPointerLock || (canvas as any).mozRequestPointerLock;
+document.exitPointerLock = document.exitPointerLock || (document as any).mozExitPointerLock;
+
+canvas.addEventListener("click", () => {
+  canvas.requestPointerLock();
 });
 
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    100
-  );
-  camera.position.set(5, 5, 5);
-  camera.lookAt(0, 0, 0);
+document.addEventListener("pointerlockchange", () => {
+  isMouseDown = document.pointerLockElement === canvas;
+});
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setClearColor(0xffffff);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+document.addEventListener("mousemove", (e) => {
+  if (!isMouseDown) return;
+  const dx = e.movementX || 0;
+  const dy = e.movementY || 0;
+  yaw -= dx * 0.002;
+  pitch -= dy * 0.002;
+  pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+});
 
-  window.addEventListener("resize", onWindowResize);
+// =====================
+// UI
+// =====================
+const inputsDiv = document.createElement('div');
+const variableNames = [
+  'x³', 'y³', 'z³',
+  'x²y', 'x²z', 'y²x', 'y²z', 'z²x', 'z²y',
+  'xyz',
+  'x²', 'y²', 'z²',
+  'xy', 'xz', 'yz',
+  'x', 'y', 'z',
+  '1'
+];
+inputsDiv.className = 'coeff-inputs';
+for (let i = 0; i < 20; i++) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'coeff-group';
+  const label = document.createElement('label');
+  label.textContent = `${variableNames[i]}\n(a${i})`;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.value = '0';
+  input.id = `a${i}`;
+  wrapper.appendChild(label);
+  wrapper.appendChild(input);
+  inputsDiv.appendChild(wrapper);
 }
 
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
+const button = document.createElement('button');
+button.textContent = 'Render';
 
-function renderIsosurface() {
-  if (mesh) scene.remove(mesh);
+const coeffOutput = document.createElement('pre');
+coeffOutput.style.marginTop = '1em';
+coeffOutput.style.background = '#222';
+coeffOutput.style.color = '#0f0';
+coeffOutput.style.padding = '0.5em';
+coeffOutput.style.fontSize = '0.9em';
+coeffOutput.style.maxWidth = '600px';
+coeffOutput.style.whiteSpace = 'pre-wrap';
 
-  const formula = (document.getElementById("formulaInput") as HTMLInputElement).value;
-  const expr = math.compile(formula);
+document.body.appendChild(inputsDiv);
+document.body.appendChild(button);
+document.body.appendChild(coeffOutput);
 
-  const size = 32;
-  const positions: number[] = [];
-
-  const grid: number[][][] = [];
-  for (let x = 0; x < size; x++) {
-    grid[x] = [];
-    for (let y = 0; y < size; y++) {
-      grid[x][y] = [];
-      for (let z = 0; z < size; z++) {
-        const xp = (x / size - 0.5) * 4;
-        const yp = (y / size - 0.5) * 4;
-        const zp = (z / size - 0.5) * 4;
-        grid[x][y][z] = expr.evaluate({ x: xp, y: yp, z: zp });
-      }
-    }
+function getCoefficients(): number[] {
+  const coeffs: number[] = [];
+  for (let i = 0; i < 20; i++) {
+    const input = document.getElementById(`a${i}`) as HTMLInputElement;
+    coeffs.push(parseFloat(input.value));
   }
-
-  // Vorzeichenwechsel als Punkte visualisieren
-  for (let x = 0; x < size - 1; x++) {
-    for (let y = 0; y < size - 1; y++) {
-      for (let z = 0; z < size - 1; z++) {
-        const v0 = grid[x][y][z];
-        const v1 = grid[x + 1][y][z];
-        const v2 = grid[x][y + 1][z];
-        const v3 = grid[x][y][z + 1];
-
-        const xp = (x / size - 0.5) * 4;
-        const yp = (y / size - 0.5) * 4;
-        const zp = (z / size - 0.5) * 4;
-
-        if (v0 * v1 < 0 || v0 * v2 < 0 || v0 * v3 < 0) {
-          positions.push(xp, yp, zp);
-        }
-      }
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({ color: 0xff0000, size: 0.05 });
-  mesh = new THREE.Points(geometry, material);
-  scene.add(mesh);
-
-  animate();
+  return coeffs;
 }
+
+function generateSurfaceFunction(coeffs: number[]): string {
+  const toFloat = (v: number) => Number.isInteger(v) ? `${v}.0` : v.toString();
+  return `
+float surface(vec3 p) {
+  float x = p.x, y = p.y, z = p.z;
+  return
+    ${toFloat(coeffs[0])}*x*x*x + ${toFloat(coeffs[1])}*y*y*y + ${toFloat(coeffs[2])}*z*z*z +
+    ${toFloat(coeffs[3])}*x*x*y + ${toFloat(coeffs[4])}*x*x*z + ${toFloat(coeffs[5])}*y*y*x +
+    ${toFloat(coeffs[6])}*y*y*z + ${toFloat(coeffs[7])}*z*z*x + ${toFloat(coeffs[8])}*z*z*y +
+    ${toFloat(coeffs[9])}*x*y*z +
+    ${toFloat(coeffs[10])}*x*x + ${toFloat(coeffs[11])}*y*y + ${toFloat(coeffs[12])}*z*z +
+    ${toFloat(coeffs[13])}*x*y + ${toFloat(coeffs[14])}*x*z + ${toFloat(coeffs[15])}*y*z +
+    ${toFloat(coeffs[16])}*x + ${toFloat(coeffs[17])}*y + ${toFloat(coeffs[18])}*z +
+    ${toFloat(coeffs[19])};
+}`;
+}
+
+function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
+  const shader = gl.createShader(type)!;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(shader)!);
+  }
+  return shader;
+}
+
+function createProgram(vsSource: string, fsSource: string): WebGLProgram {
+  const vs = compileShader(gl, gl.VERTEX_SHADER, vsSource);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  const program = gl.createProgram()!;
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(program)!);
+  }
+  return program;
+}
+
+const quadVerts = new Float32Array([
+  -1, -1, 1, -1, -1, 1,
+   1, -1, 1, 1, -1, 1
+]);
+
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+const vbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, quadVerts, gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+gl.viewport(0, 0, canvas.width, canvas.height);
+gl.clearColor(0, 0, 0, 1);
+gl.enable(gl.DEPTH_TEST);
+gl.getExtension('EXT_color_buffer_float');
+gl.getExtension('OES_texture_float_linear');
+
+let currentProgram: WebGLProgram | null = null;
+
+button.onclick = () => {
+  const coeffs = getCoefficients();
+  const surfaceFn = generateSurfaceFunction(coeffs);
+  const finalFrag = fragmentTemplate.replace('__SURFACE_FUNCTION__', surfaceFn);
+  const program = createProgram(vertexSource, finalFrag);
+  gl.useProgram(program);
+  currentProgram = program;
+
+  const terms = [
+    'x^3', 'y^3', 'z^3', 'x^2*y', 'x^2*z', 'y^2*x', 'y^2*z', 'z^2*x', 'z^2*y',
+    'x*y*z', 'x^2', 'y^2', 'z^2', 'x*y', 'x*z', 'y*z', 'x', 'y', 'z', '1'
+  ];
+  const formula = coeffs.map((val, i) => {
+    if (val === 0) return null;
+    const term = terms[i];
+    if (val === 1) return `${term}`;
+    if (val === -1) return `-${term}`;
+    return `${val}*${term}`;
+  }).filter(Boolean).join(' + ').replace(/\+\s\-/g, '- ');
+
+  coeffOutput.textContent = `Formel:\nf(x, y, z) = ${formula}\n\nKoeffizienten:\n` +
+    coeffs.map((val, i) => `a${i.toString().padStart(2, '0')} = ${val}`).join(', ');
+};
 
 function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  renderer.clear();
+
+  // Kamera aktualisieren
+  const dir = new THREE.Vector3(
+    Math.cos(pitch) * Math.sin(yaw),
+    Math.sin(pitch),
+    Math.cos(pitch) * Math.cos(yaw)
+  );
+  const speed = 0.05;
+  const forward = dir.clone();
+  const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+
+  if (keysPressed.has('w')) camera.position.add(forward.clone().multiplyScalar(speed));
+  if (keysPressed.has('s')) camera.position.add(forward.clone().multiplyScalar(-speed));
+  if (keysPressed.has('a')) camera.position.add(right.clone().multiplyScalar(-speed));
+  if (keysPressed.has('d')) camera.position.add(right.clone().multiplyScalar(speed));
+  if (keysPressed.has('q')) camera.position.add(up.clone().multiplyScalar(-speed));
+  if (keysPressed.has('e')) camera.position.add(up.clone().multiplyScalar(speed));
+
+  camera.lookAt(camera.position.clone().add(dir));
+
+  if (!currentProgram) return;
+
+  gl.useProgram(currentProgram);
+
+  const look = new THREE.Vector3();
+  camera.getWorldDirection(look);
+  const target = camera.position.clone().add(look);
+  const f = new THREE.Vector3().subVectors(target, camera.position).normalize();
+  const r = new THREE.Vector3().crossVectors(f, camera.up).normalize();
+  const u = new THREE.Vector3().crossVectors(r, f);
+
+  const rot = new Float32Array([
+    r.x, r.y, r.z,
+    u.x, u.y, u.z,
+   -f.x, -f.y, -f.z
+  ]);
+
+  const camPosLoc = gl.getUniformLocation(currentProgram, 'camPos');
+  const camRotLoc = gl.getUniformLocation(currentProgram, 'camRot');
+  gl.uniform3fv(camPosLoc, camera.position.toArray());
+  gl.uniformMatrix3fv(camRotLoc, false, rot);
+
+  gl.bindVertexArray(vao);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
+
+animate();
+
