@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kubische Fläche Raytracing</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+    }
+
+    canvas {
+      width: 100vw;
+      height: 80vh;
+      display: block;
+      background: black;
+    }
+
+    #controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      padding: 10px;
+      background: #222;
+    }
+
+    #controls input[type="number"] {
+      width: 100%;
+      padding: 4px;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas"></canvas>
+  <div id="controls"></div>
+  <script type="module" src="cubicSurface.ts"></script>
+</body>
+</html>

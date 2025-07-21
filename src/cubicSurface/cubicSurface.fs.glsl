@@ -1,53 +1,68 @@
 #version 300 es
 precision highp float;
 
-in vec2 vUV;
+uniform vec3 u_cameraOrigin;
+uniform mat4 u_cameraMatrix;
+uniform vec2 u_resolution;
+
 out vec4 fragColor;
 
-uniform vec3 camPos;
-uniform mat3 camRot;
-
-__SURFACE_FUNCTION__
-
-float map(vec3 p) {
-  return surface(p);
+vec3 getRayDirection(vec2 fragCoord, vec2 resolution, mat4 invCam) {
+    vec2 ndc = (fragCoord / resolution) * 2.0 - 1.0;
+    vec4 clip = vec4(ndc, -1.0, 1.0);
+    vec4 world = invCam * clip;
+    return normalize(world.xyz / world.w - u_cameraOrigin);
 }
 
-vec3 getNormal(vec3 p) {
-  float eps = 0.001;
-  return normalize(vec3(
-    map(p + vec3(eps, 0, 0)) - map(p - vec3(eps, 0, 0)),
-    map(p + vec3(0, eps, 0)) - map(p - vec3(0, eps, 0)),
-    map(p + vec3(0, 0, eps)) - map(p - vec3(0, 0, eps))
-  ));
+// Ray-Zylinder-Schnitt (analytisch, unendlich langer Zylinder)
+bool intersectCylinder(vec3 o, vec3 v, vec3 a, vec3 b, float r, out float t) {
+    vec3 oa = o - a;
+    vec3 bxv = cross(b, v);
+    vec3 bxoa = cross(b, oa);
+
+    float A = dot(bxv, bxv);
+    float B = 2.0 * dot(bxv, bxoa);
+    float C = dot(bxoa, bxoa) - dot(b, b) * r * r;
+
+    float disc = B * B - 4.0 * A * C;
+    if (disc < 0.0) return false;
+
+    float sqrtDisc = sqrt(disc);
+    float t1 = (-B - sqrtDisc) / (2.0 * A);
+    float t2 = (-B + sqrtDisc) / (2.0 * A);
+
+    t = (t1 > 0.0) ? t1 : ((t2 > 0.0) ? t2 : -1.0);
+    return (t > 0.0);
+}
+
+// Normale am Zylinder (Gradient der impliziten Funktion)
+vec3 cylinderNormal(vec3 p, vec3 a, vec3 b) {
+    vec3 pa = p - a;
+    vec3 grad = 2.0 * cross(b, cross(b, pa));
+    return normalize(grad);
 }
 
 void main() {
-  vec2 uv = vUV * 2.0 - 1.0;
-  vec3 ro = camPos;
-  vec3 rd = normalize(camRot * normalize(vec3(uv, -1.5)));
+    vec2 fragCoord = gl_FragCoord.xy;
+    vec3 ro = u_cameraOrigin;
+    vec3 rd = getRayDirection(fragCoord, u_resolution, u_cameraMatrix);
 
-  float t = 0.0;
-  float d;
-  bool hit = false;
-  for (int i = 0; i < 100; i++) {
-    vec3 p = ro + t * rd;
-    d = map(p);
-    if (abs(d) < 0.001) {
-      hit = true;
-      break;
+    // Zylinderparameter
+    vec3 a = vec3(0.0, 0.0, 0.0);  // Aufpunkt
+    vec3 b = vec3(0.0, 1.0, 0.0);  // Richtungsvektor
+    float r = 0.5;
+
+    float t;
+    if (intersectCylinder(ro, rd, a, b, r, t)) {
+        vec3 hitPos = ro + t * rd;
+        vec3 normal = cylinderNormal(hitPos, a, b);
+
+        // einfache Beleuchtung
+        vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+        float diff = max(dot(normal, lightDir), 0.0);
+        vec3 baseColor = vec3(1.0, 0.6, 0.3);
+        fragColor = vec4(baseColor * diff, 1.0);
+    } else {
+        fragColor = vec4(0.0); // kein Treffer
     }
-    t += d * 0.5;
-    if (t > 10.0) break;
-  }
-
-  if (hit) {
-    vec3 p = ro + t * rd;
-    vec3 n = getNormal(p);
-    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.8));
-    float diffuse = max(dot(n, lightDir), 0.0);
-    fragColor = vec4(vec3(0.2, 0.8, 1.0) * diffuse, 1.0);
-  } else {
-    fragColor = vec4(1.0);
-  }
 }
