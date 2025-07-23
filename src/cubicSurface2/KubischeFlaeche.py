@@ -1,5 +1,5 @@
 from sympy import *
-from sympy.codegen.rewriting import optimize, optims_c99
+#from sympy.codegen.rewriting import optimize, optims_c99
 
 x,y,z,l = symbols("x y z l")
 a1,a2,a3 = symbols("a1 a2 a3")
@@ -52,7 +52,7 @@ print()
 print(c0)
 print()
 
-print(diff(cubicsurface,x))
+#print(diff(cubicsurface,x))
 
 """
 c003*d3**3 + c012*d2*d3**2 + c021*d2**2*d3 + c030*d2**3 + c102*d1*d3**2 + c111*d1*d2*d3 + c120*d1*d2**2 + c201*d1**2*d3 + c210*d1**2*d2 + c300*d1**3

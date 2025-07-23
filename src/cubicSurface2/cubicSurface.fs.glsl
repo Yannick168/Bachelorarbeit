@@ -9,18 +9,13 @@ uniform float u_surfaceCoeffs[20];   // c000..c300 (f(x,y,z) = 0)
 
 out vec4 fragColor;
 
-vec3 getRayDirection(vec2 fragCoord, vec2 resolution, mat4 invCam) {
-  vec2 ndc = fragCoord / resolution * 2.0 - 1.0;
-  vec4 clip = vec4(ndc, -1.0, 1.0);
-  vec4 world = invCam * clip;
-  return normalize(world.xyz / world.w - u_cameraOrigin);
-}
+
 
 vec3 evalGradient(vec3 p, float[20] c) {
   float x = p.x, y = p.y, z = p.z;
 
   float dx =
-    3.0 * c[0] * x * x +          // c300
+    3.0 * c[0] * x * x +          // c300 xyz
     2.0 * c[4] * x * y +          // c210
     2.0 * c[5] * x * z +          // c201
     c[10] * 2.0 * x +             // c200
@@ -49,6 +44,12 @@ vec3 evalGradient(vec3 p, float[20] c) {
   return vec3(dx, dy, dz);
 }
 
+vec3 getRayDirection(vec2 fragCoord, vec2 resolution, mat4 invCam) {
+  vec2 ndc = fragCoord / resolution * 2.0 - 1.0;
+  vec4 clip = vec4(ndc, -1.0, 1.0);
+  vec4 world = invCam * clip;
+  return normalize(world.xyz / world.w - u_cameraOrigin);
+}
 
 void main() {
   vec2 fragCoord = gl_FragCoord.xy;
