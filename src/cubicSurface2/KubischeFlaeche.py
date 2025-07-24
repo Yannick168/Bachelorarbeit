@@ -43,32 +43,26 @@ c2 = expr.coeff(l,2)
 c1 = expr.coeff(l,1)
 c0 = expr.coeff(l,0)
 
-print(c3)
-print()
-print(c2)
-print()
-print(c1)
-print()
-print(c0)
+print(ccode(c3))
+print(ccode(c2))
+print(ccode(c1))
+print(ccode(c0))
 print()
 
 #print(diff(cubicsurface,x))
 
+
+print(ccode(simplify(diff(cubicsurface, x))))
+print(ccode(simplify(diff(cubicsurface, y))))
+print(ccode(simplify(diff(cubicsurface, z))))
+
 """
-c003*d3**3 + c012*d2*d3**2 + c021*d2**2*d3 + c030*d2**3 + c102*d1*d3**2 + c111*d1*d2*d3 + c120*d1*d2**2 + c201*d1**2*d3 + c210*d1**2*d2 + c300*d1**3
+c003*pow(d3, 3) + c012*d2*pow(d3, 2) + c021*pow(d2, 2)*d3 + c030*pow(d2, 3) + c102*d1*pow(d3, 2) + c111*d1*d2*d3 + c120*d1*pow(d2, 2) + c201*pow(d1, 2)*d3 + c210*pow(d1, 2)*d2 + c300*pow(d1, 3)
+a1*c102*pow(d3, 2) + a1*c111*d2*d3 + a1*c120*pow(d2, 2) + 2*a1*c201*d1*d3 + 2*a1*c210*d1*d2 + 3*a1*c300*pow(d1, 2) + a2*c012*pow(d3, 2) + 2*a2*c021*d2*d3 + 3*a2*c030*pow(d2, 2) + a2*c111*d1*d3 + 2*a2*c120*d1*d2 + a2*c210*pow(d1, 2) + 3*a3*c003*pow(d3, 2) + 2*a3*c012*d2*d3 + a3*c021*pow(d2, 2) + 2*a3*c102*d1*d3 + a3*c111*d1*d2 + a3*c201*pow(d1, 2) + c002*pow(d3, 2) + c011*d2*d3 + c020*pow(d2, 2) + c101*d1*d3 + c110*d1*d2 + c200*pow(d1, 2)
+pow(a1, 2)*c201*d3 + pow(a1, 2)*c210*d2 + 3*pow(a1, 2)*c300*d1 + a1*a2*c111*d3 + 2*a1*a2*c120*d2 + 2*a1*a2*c210*d1 + 2*a1*a3*c102*d3 + a1*a3*c111*d2 + 2*a1*a3*c201*d1 + a1*c101*d3 + a1*c110*d2 + 2*a1*c200*d1 + pow(a2, 2)*c021*d3 + 3*pow(a2, 2)*c030*d2 + pow(a2, 2)*c120*d1 + 2*a2*a3*c012*d3 + 2*a2*a3*c021*d2 + a2*a3*c111*d1 + a2*c011*d3 + 2*a2*c020*d2 + a2*c110*d1 + 3*pow(a3, 2)*c003*d3 + pow(a3, 2)*c012*d2 + pow(a3, 2)*c102*d1 + 2*a3*c002*d3 + a3*c011*d2 + a3*c101*d1 + c001*d3 + c010*d2 + c100*d1
+pow(a1, 3)*c300 + pow(a1, 2)*a2*c210 + pow(a1, 2)*a3*c201 + pow(a1, 2)*c200 + a1*pow(a2, 2)*c120 + a1*a2*a3*c111 + a1*a2*c110 + a1*pow(a3, 2)*c102 + a1*a3*c101 + a1*c100 + pow(a2, 3)*c030 + pow(a2, 2)*a3*c021 + pow(a2, 2)*c020 + a2*pow(a3, 2)*c012 + a2*a3*c011 + a2*c010 + pow(a3, 3)*c003 + pow(a3, 2)*c002 + a3*c001 + c000
 
-
-
-a1*c102*d3**2 + a1*c111*d2*d3 + a1*c120*d2**2 + 2*a1*c201*d1*d3 + 2*a1*c210*d1*d2 + 3*a1*c300*d1**2 + a2*c012*d3**2 + 2*a2*c021*d2*d3 + 3*a2*c030*d2**2 + a2*c111*d1*d3 + 2*a2*c120*d1*d2 + a2*c210*d1**2 + 3*a3*c003*d3**2 + 2*a3*c012*d2*d3 + a3*c021*d2**2 + 2*a3*c102*d1*d3 + a3*c111*d1*d2 + a3*c201*d1**2 + c002*d3**2 + c011*d2*d3 + c020*d2**2 + c101*d1*d3 + c110*d1*d2 + c200*d1**2       
-
-a1**2*c201*d3 + a1**2*c210*d2 + 3*a1**2*c300*d1 + a1*a2*c111*d3 + 2*a1*a2*c120*d2 + 2*a1*a2*c210*d1 + 2*a1*a3*c102*d3 + a1*a3*c111*d2 + 2*a1*a3*c201*d1 + a1*c101*d3 + a1*c110*d2 + 2*a1*c200*d1 + a2**2*c021*d3 + 3*a2**2*c030*d2 + a2**2*c120*d1 + 2*a2*a3*c012*d3 + 2*a2*a3*c021*d2 + a2*a3*c111*d1 + a2*c011*d3 + 2*a2*c020*d2 + a2*c110*d1 + 3*a3**2*c003*d3 + a3**2*c012*d2 + a3**2*c102*d1 + 2*a3*c002*d3 + a3*c011*d2 + a3*c101*d1 + c001*d3 + c010*d2 + c100*d1
-
-a1**3*c300 + a1**2*a2*c210 + a1**2*a3*c201 + a1**2*c200 + a1*a2**2*c120 + a1*a2*a3*c111 + a1*a2*c110 + a1*a3**2*c102 + a1*a3*c101 + a1*c100 + a2**3*c030 + a2**2*a3*c021 + a2**2*c020 + a2*a3**2*c012 + a2*a3*c011 + a2*c010 + a3**3*c003 + a3**2*c002 + a3*c001 + c000
-
-c100 + c101*z + c102*z**2 + c110*y + c111*y*z + c120*y**2 + 2*c200*x + 2*c201*x*z + 2*c210*x*y + 012 + a2*a3*c011 + a2*c010 + a3**3*c003 + a3**2*c002 + a3*c001 + c000
-
-
-
-3*c300*x**2
-
+c100 + c101*z + c102*pow(z, 2) + c110*y + c111*y*z + c120*pow(y, 2) + 2*c200*x + 2*c201*x*z + 2*c210*x*y + 3*c300*pow(x, 2)
+c010 + c011*z + c012*pow(z, 2) + 2*c020*y + 2*c021*y*z + 3*c030*pow(y, 2) + c110*x + c111*x*z + 2*c120*x*y + c210*pow(x, 2)
+c001 + 2*c002*z + 3*c003*pow(z, 2) + c011*y + 2*c012*y*z + c021*pow(y, 2) + c101*x + 2*c102*x*z + c111*x*y + c201*pow(x, 2)
 """
