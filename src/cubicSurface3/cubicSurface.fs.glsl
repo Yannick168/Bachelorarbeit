@@ -364,8 +364,6 @@ float c000 = 0.0f;
 
 
 
-
-
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
 
   float c300 = coeffs[0];
@@ -436,7 +434,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
       continue;
     if (res[i] < t) {
       vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 2.0f)
+      if (dot(p,p) > 10.0f)
         continue;
       t = res[i];
     }
