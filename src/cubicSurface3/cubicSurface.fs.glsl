@@ -6,6 +6,8 @@ in vec3 vUV;
 uniform mat4 uModelInverse;
 uniform int uOrthographic;
 uniform int uSurface;
+uniform float uCoeffs[20];
+
 
 out vec4 fColor;
 
@@ -164,7 +166,7 @@ vec3 clebschNormal(vec3 p) {
   n.z = -189.0f*p.x*p.x + 54.0f*p.x*p.y + 126.0f*p.x - 189.0f*p.y*p.y + 126.0f*p.y + 243.0f*p.z*p.z - 378.0f*p.z*(p.x + p.y) - 18.0f*p.z - 9.0f;
   return(normalize(n));
 }
-
+  
 //Sphere
 /*
 float c300 = 0.0f;
@@ -360,30 +362,32 @@ float c000 = 0.0f;
 
 */
 
-float c300 = 0.0f;
-float c030 = 0.0f;
-float c003 = 0.0f;
-float c210 = 0.0f;
-float c201 = 0.0f;
-float c021 = 0.0f;
-float c012 = 0.0f;
-float c120 = 0.0f;
-float c102 = 0.0f;  
-float c111 = 0.0f;
-float c200 = 1.0f; 
-float c020 = 1.0f; 
-float c002 = 1.0f; 
-float c101 = 0.0f; 
-float c110 = 0.0f;
-float c011 = 0.0f; 
-float c100 = 0.0f; 
-float c010 = 0.0f; 
-float c001 = 0.0f;
-float c000 = -1.0f; 
 
 
 
-float cubicSurfaceIntersect(vec3 ro, vec3 rd) {
+
+float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
+
+  float c300 = coeffs[0];
+  float c030 = coeffs[1];
+  float c003 = coeffs[2];
+  float c210 = coeffs[3];
+  float c201 = coeffs[4];
+  float c021 = coeffs[5];
+  float c012 = coeffs[6];
+  float c120 = coeffs[7];
+  float c102 = coeffs[8];
+  float c111 = coeffs[9];
+  float c200 = coeffs[10];
+  float c020 = coeffs[11];
+  float c002 = coeffs[12];
+  float c101 = coeffs[13];
+  float c110 = coeffs[14];
+  float c011 = coeffs[15];
+  float c100 = coeffs[16];
+  float c010 = coeffs[17];
+  float c001 = coeffs[18];
+  float c000 = coeffs[19];
 
   float coeff[4];
   vec3 res;
@@ -444,7 +448,27 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd) {
 }
 
 
-vec3 cubicSurfaceNormal(vec3 p) {
+vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
+  float c300 = uCoeffs[0];
+  float c030 = uCoeffs[1];
+  float c003 = uCoeffs[2];
+  float c210 = uCoeffs[3];
+  float c201 = uCoeffs[4];
+  float c021 = uCoeffs[5];
+  float c012 = uCoeffs[6];
+  float c120 = uCoeffs[7];
+  float c102 = uCoeffs[8];
+  float c111 = uCoeffs[9];
+  float c200 = uCoeffs[10];
+  float c020 = uCoeffs[11];
+  float c002 = uCoeffs[12];
+  float c101 = uCoeffs[13];
+  float c110 = uCoeffs[14];
+  float c011 = uCoeffs[15];
+  float c100 = uCoeffs[16];
+  float c010 = uCoeffs[17];
+  float c001 = uCoeffs[18];
+  float c000 = uCoeffs[19];
   vec3 n;
 
   n.x = c100 + c101*p.z + c102*pow(p.z, 2.0) + c110*p.y + c111*p.y*p.z + c120*pow(p.y, 2.0) + 2.0*c200*p.x + 2.0*c201*p.x*p.z + 2.0*c210*p.x*p.y + 3.0*c300*pow(p.x, 2.0);
@@ -463,6 +487,8 @@ vec3 clebschLineNormal(vec3 p) {
   return(normalize(n));
 }
 
+
+
 void main() {
   vec3 ro = vUV;
   vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz : vUV - uModelInverse[3].xyz;
@@ -474,6 +500,14 @@ void main() {
 
   switch(uSurface) {
     case 1:
+      lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
+      if(lambda < 0.0f)
+        discard;
+      p = ro + lambda * rd;
+      n = cubicSurfaceNormal(p, uCoeffs);
+      break;
+
+    case 2:
       lambda = clebschIntersect(ro, rd);
       if(lambda < 0.0f)
         discard;
@@ -486,18 +520,7 @@ void main() {
         col = vec4(1.0f,0.0f,0.0f,1.0f);
       }
       break;
-
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-      lambda = cubicSurfaceIntersect(ro, rd);
-      if(lambda < 0.0f)
-        discard;
-      p = ro + lambda * rd;
-      n = cubicSurfaceNormal(p);
-      break;
   }
   fColor = abs(dot(rd, n)) * col;
 }
+

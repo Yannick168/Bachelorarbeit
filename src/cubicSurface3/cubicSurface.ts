@@ -1,3 +1,27 @@
+function resizeCanvas(canvas: HTMLCanvasElement) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const aspectRatio = 16 / 9;
+
+  let width = vw;
+  let height = vw / aspectRatio;
+
+  if (height > vh) {
+    height = vh;
+    width = vh * aspectRatio;
+  }
+
+  canvas.width = width * window.devicePixelRatio;
+  canvas.height = height * window.devicePixelRatio;
+
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  canvas.style.position = "absolute";
+  canvas.style.top = "50%";
+  canvas.style.left = "50%";
+  canvas.style.transform = "translate(-50%, -50%)";
+}
+
 import { mat4, vec2, vec3, quat } from 'gl-matrix';
 
 type UnitCube = {
@@ -100,9 +124,9 @@ function drawCube(ctx: AppContext) {
 
   const invModel = mat4.invert(mat4.create(), ctx.modelView);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uModelInverse'), false, invModel);
-
+  console.log(ctx.curSurface)
   gl.uniform1i(gl.getUniformLocation(program, 'uSurface'), ctx.curSurface);
-  gl.uniform1i(gl.getUniformLocation(program, 'uOrthographic'), ctx.viewMode === 1 ? 1 : 0);
+  gl.uniform1i(gl.getUniformLocation(program, 'uOrthographic'), ctx.viewMode === 2 ? 1 : 0);
 
   gl.bindVertexArray(ctx.cube.vao);
   gl.drawElements(gl.TRIANGLES, ctx.cube.iboSize, gl.UNSIGNED_SHORT, 0);
@@ -122,11 +146,11 @@ function drawScene(ctx: AppContext) {
   mat4.identity(ctx.projection);
   mat4.identity(ctx.modelView);
 
-  if (ctx.viewMode === 1) {
+  if (ctx.viewMode === 2) {  // Orthographic
     mat4.ortho(ctx.projection, -displayWidth/2, displayWidth/2, -displayHeight/2, displayHeight/2, mynear, myfar);
   } 
   
-  else if (ctx.viewMode === 2) {
+  else if (ctx.viewMode === 1) {  // Perspective
     const l = mynear * (-displayWidth / 2 - camX) / camZ;
     const r = mynear * (displayWidth / 2 - camX) / camZ;
     const b = mynear * (-displayHeight / 2 - camY) / camZ;
@@ -168,14 +192,27 @@ function drawScene(ctx: AppContext) {
 window.addEventListener('load', async () => {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
   const gl = canvas.getContext('webgl2')!;
-  canvas.width = canvas.clientWidth * window.devicePixelRatio;
-  canvas.height = canvas.clientHeight * window.devicePixelRatio;
+  resizeCanvas(canvas);
   gl.viewport(0, 0, canvas.width, canvas.height);
 
   const vsSource = await loadShaderSource('cubicSurface.vs.glsl');
   const fsSource = await loadShaderSource('cubicSurface.fs.glsl');
   const program = compileShaderProgram(gl, vsSource, fsSource);
   gl.useProgram(program);
+
+  const coeffLoc = gl.getUniformLocation(program, "uCoeffs");
+
+  document.getElementById("applyCoeffs")!.addEventListener("click", () => {
+    const coeffs = (window as any).getUserCoeffs();
+    if (coeffs.length !== 20) {
+      alert("Bitte genau 20 Koeffizienten eingeben.");
+      return;
+    }
+    gl.useProgram(program);
+    gl.uniform1fv(coeffLoc, new Float32Array(coeffs));
+    drawScene(ctx);
+  });
+
 
   const cube = createUnitCube(gl, program);
   const ctx: AppContext = {
@@ -186,8 +223,8 @@ window.addEventListener('load', async () => {
     mousePos: vec2.create(),
     mousePressed: false,
     zoom: 1.0,
-    viewMode: 3,
-    curSurface: 2,
+    viewMode: 1,
+    curSurface: 1,
   };
 
   gl.clearColor(0.5, 0.5, 0.5, 1);
@@ -230,5 +267,10 @@ window.addEventListener('load', async () => {
     drawScene(ctx);
     requestAnimationFrame(renderLoop);
   }
+  window.addEventListener('resize', () => {
+    resizeCanvas(canvas);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  });
+
   renderLoop();
 });
