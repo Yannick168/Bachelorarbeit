@@ -310,6 +310,55 @@ float c001 = 0.0f;
 float c000 = 0.0f; 
 */
 
+//Calyey 2 (Problem mit dem cubic solver)
+/*
+float c300 = -1.6f;
+float c030 = 0.0f;
+float c003 = 1.0f;
+float c210 = 0.0f;
+float c201 = 0.0f;
+float c021 = 0.0f;
+float c012 = 0.0f;
+float c120 = 4.8f;
+float c102 = 0.0f;  
+float c111 = 0.0f;
+float c200 = 0.0f; 
+float c020 = 0.8f; 
+float c002 = 0.0f; 
+float c101 = 0.0f; 
+float c110 = 0.0f;
+float c011 = 0.0f; 
+float c100 = 0.0f; 
+float c010 = 0.0f; 
+float c001 = 0.0f;
+float c000 = 0.0f; 
+*/
+
+
+//crosspropeller
+/*
+float c300 = 0.0f;
+float c030 = 0.0f;
+float c003 = 0.0f;
+float c210 = 0.0f;
+float c201 = 0.0f;
+float c021 = 0.0f;
+float c012 = 0.0f;
+float c120 = 0.0f;
+float c102 = 0.0f;  
+float c111 = 1.0f;
+float c200 = 1.0f; 
+float c020 = 0.1f; 
+float c002 = 0.0f; 
+float c101 = 0.0f; 
+float c110 = 0.0f;
+float c011 = 0.0f; 
+float c100 = 0.0f; 
+float c010 = 0.0f; 
+float c001 = 0.0f;
+float c000 = 0.0f; 
+
+*/
 
 float c300 = 0.0f;
 float c030 = 0.0f;
@@ -321,17 +370,16 @@ float c012 = 0.0f;
 float c120 = 0.0f;
 float c102 = 0.0f;  
 float c111 = 0.0f;
-float c200 = 0.0f; 
-float c020 = 0.0f; 
-float c002 = 0.0f; 
+float c200 = 1.0f; 
+float c020 = 1.0f; 
+float c002 = 1.0f; 
 float c101 = 0.0f; 
 float c110 = 0.0f;
 float c011 = 0.0f; 
-float c100 = 1.0f; 
+float c100 = 0.0f; 
 float c010 = 0.0f; 
 float c001 = 0.0f;
-float c000 = 0.0f; 
-
+float c000 = -1.0f; 
 
 
 
@@ -384,7 +432,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd) {
       continue;
     if (res[i] < t) {
       vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 1.0f)
+      if (dot(p,p) > 2.0f)
         continue;
       t = res[i];
     }
@@ -416,9 +464,9 @@ vec3 clebschLineNormal(vec3 p) {
 }
 
 void main() {
-  vec3 ro = uModelInverse[3].xyz;
-  vec3 rd = normalize(vUV - ro);
-rd = normalize(rd);
+  vec3 ro = vUV;
+  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz : vUV - uModelInverse[3].xyz;
+  rd = normalize(rd);
   vec4 col = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
   vec3 p, n;
