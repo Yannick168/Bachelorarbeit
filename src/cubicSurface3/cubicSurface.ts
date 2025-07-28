@@ -160,7 +160,48 @@ function drawScene(ctx: AppContext) {
   mat4.scale(rotation, rotation, [ctx.zoom * 15, ctx.zoom * 15, ctx.zoom * 15]);
   mat4.multiply(ctx.modelView, ctx.modelView, rotation);
   drawCube(ctx);
+
+
+  if (ctx.viewMode === 3) {
+    const eyeOffset = 1.5;
+    const rotation = mat4.fromQuat(mat4.create(), ctx.qNow);
+    mat4.scale(rotation, rotation, [ctx.zoom * 15, ctx.zoom * 15, ctx.zoom * 15]);
+
+    // Linkes Auge – Rot
+    gl.colorMask(true, false, false, true);
+    const PLeft = mat4.create();
+    const MLeft = mat4.create();
+    mat4.frustum(PLeft,
+      mynear * (-displayWidth / 2 - eyeOffset) / camZ,
+      mynear * (displayWidth / 2 - eyeOffset) / camZ,
+      mynear * (-displayHeight / 2 - camY) / camZ,
+      mynear * (displayHeight / 2 - camY) / camZ,
+      mynear, myfar);
+    mat4.translate(MLeft, MLeft, [-eyeOffset, -camY, -camZ]);
+    mat4.multiply(ctx.modelView, MLeft, rotation);
+    mat4.copy(ctx.projection, PLeft);
+    drawCube(ctx);
+
+    // Rechtes Auge – Cyan
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.colorMask(false, true, true, true);
+    const PRight = mat4.create();
+    const MRight = mat4.create();
+    mat4.frustum(PRight,
+      mynear * (-displayWidth / 2 + eyeOffset) / camZ,
+      mynear * (displayWidth / 2 + eyeOffset) / camZ,
+      mynear * (-displayHeight / 2 - camY) / camZ,
+      mynear * (displayHeight / 2 - camY) / camZ,
+      mynear, myfar);
+    mat4.translate(MRight, MRight, [eyeOffset, -camY, -camZ]);
+    mat4.multiply(ctx.modelView, MRight, rotation);
+    mat4.copy(ctx.projection, PRight);
+    drawCube(ctx);
+
+    gl.colorMask(true, true, true, true); // Farbe normalisieren
+  }
 }
+
 
 window.addEventListener('load', async () => {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
