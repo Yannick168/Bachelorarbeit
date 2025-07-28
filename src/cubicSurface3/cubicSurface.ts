@@ -1,3 +1,24 @@
+import { mat4, vec2, vec3, quat } from 'gl-matrix';
+
+type UnitCube = {
+  vao: WebGLVertexArrayObject;
+  iboSize: number;
+};
+
+type AppContext = {
+  gl: WebGL2RenderingContext;
+  program: WebGLProgram;
+  cube: UnitCube;
+  projection: mat4;
+  modelView: mat4;
+  qNow: quat;
+  mousePos: vec2;
+  mousePressed: boolean;
+  zoom: number;
+  viewMode: number;
+  curSurface: number;
+};
+
 function resizeCanvas(canvas: HTMLCanvasElement) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -21,27 +42,6 @@ function resizeCanvas(canvas: HTMLCanvasElement) {
   canvas.style.left = "50%";
   canvas.style.transform = "translate(-50%, -50%)";
 }
-
-import { mat4, vec2, vec3, quat } from 'gl-matrix';
-
-type UnitCube = {
-  vao: WebGLVertexArrayObject;
-  iboSize: number;
-};
-
-type AppContext = {
-  gl: WebGL2RenderingContext;
-  program: WebGLProgram;
-  cube: UnitCube;
-  projection: mat4;
-  modelView: mat4;
-  qNow: quat;
-  mousePos: vec2;
-  mousePressed: boolean;
-  zoom: number;
-  viewMode: number;
-  curSurface: number;
-};
 
 async function loadShaderSource(url: string): Promise<string> {
   const response = await fetch(url);
@@ -108,9 +108,9 @@ function mouseToTrackball(gl: WebGL2RenderingContext, pos: vec2): vec3 {
 function trackball(p1: vec3, p2: vec3): quat {
   const axis = vec3.create();
   vec3.cross(axis, p1, p2);
-  if (vec3.length(axis) < 1e-5) return quat.create(); // keine Rotation
+  if (vec3.length(axis) < 1e-5) return quat.create();
   vec3.normalize(axis, axis);
-  const dot = Math.max(-1, Math.min(1, vec3.dot(p1, p2))); // Clamp
+  const dot = Math.max(-1, Math.min(1, vec3.dot(p1, p2)));
   const angle = Math.acos(dot);
   return quat.setAxisAngle(quat.create(), axis, angle);
 }
@@ -121,10 +121,8 @@ function drawCube(ctx: AppContext) {
 
   gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uProjection'), false, ctx.projection);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uModelView'), false, ctx.modelView);
-
   const invModel = mat4.invert(mat4.create(), ctx.modelView);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uModelInverse'), false, invModel);
-  console.log(ctx.curSurface)
   gl.uniform1i(gl.getUniformLocation(program, 'uSurface'), ctx.curSurface);
   gl.uniform1i(gl.getUniformLocation(program, 'uOrthographic'), ctx.viewMode === 2 ? 1 : 0);
 
@@ -146,11 +144,9 @@ function drawScene(ctx: AppContext) {
   mat4.identity(ctx.projection);
   mat4.identity(ctx.modelView);
 
-  if (ctx.viewMode === 2) {  // Orthographic
+  if (ctx.viewMode === 2) {
     mat4.ortho(ctx.projection, -displayWidth/2, displayWidth/2, -displayHeight/2, displayHeight/2, mynear, myfar);
-  } 
-  
-  else if (ctx.viewMode === 1) {  // Perspective
+  } else {
     const l = mynear * (-displayWidth / 2 - camX) / camZ;
     const r = mynear * (displayWidth / 2 - camX) / camZ;
     const b = mynear * (-displayHeight / 2 - camY) / camZ;
@@ -159,34 +155,10 @@ function drawScene(ctx: AppContext) {
   }
 
   mat4.translate(ctx.modelView, ctx.modelView, [-camX, -camY, -camZ]);
-
-  if (ctx.viewMode === 3) {
-    const rotation = mat4.fromQuat(mat4.create(), ctx.qNow);
-    mat4.scale(rotation, rotation, [ctx.zoom * 15, ctx.zoom * 15, ctx.zoom * 15]);
-
-    for (const offset of [-3, 3]) {
-      const l = mynear * (-displayWidth / 2 - offset) / camZ;
-      const r = mynear * (displayWidth / 2 - offset) / camZ;
-      const b = mynear * (-displayHeight / 2 - camY) / camZ;
-      const t = mynear * (displayHeight / 2 - camY) / camZ;
-      const proj = mat4.create();
-      mat4.frustum(proj, l, r, b, t, mynear, myfar);
-      const mv = mat4.create();
-      mat4.translate(mv, mv, [-offset, -camY, -camZ]);
-      mat4.multiply(ctx.modelView, mv, rotation);
-      mat4.copy(ctx.projection, proj);
-      gl.colorMask(offset < 0, offset > 0, offset > 0, true);
-      if (offset > -3) gl.clear(gl.DEPTH_BUFFER_BIT);
-      drawCube(ctx);
-    }
-
-    gl.colorMask(true, true, true, true);
-  } else {
-    const rotation = mat4.fromQuat(mat4.create(), ctx.qNow);
-    mat4.scale(rotation, rotation, [ctx.zoom * 15, ctx.zoom * 15, ctx.zoom * 15]);
-    mat4.multiply(ctx.modelView, ctx.modelView, rotation);
-    drawCube(ctx);
-  }
+  const rotation = mat4.fromQuat(mat4.create(), ctx.qNow);
+  mat4.scale(rotation, rotation, [ctx.zoom * 15, ctx.zoom * 15, ctx.zoom * 15]);
+  mat4.multiply(ctx.modelView, ctx.modelView, rotation);
+  drawCube(ctx);
 }
 
 window.addEventListener('load', async () => {
@@ -201,19 +173,6 @@ window.addEventListener('load', async () => {
   gl.useProgram(program);
 
   const coeffLoc = gl.getUniformLocation(program, "uCoeffs");
-
-  document.getElementById("applyCoeffs")!.addEventListener("click", () => {
-    const coeffs = (window as any).getUserCoeffs();
-    if (coeffs.length !== 20) {
-      alert("Bitte genau 20 Koeffizienten eingeben.");
-      return;
-    }
-    gl.useProgram(program);
-    gl.uniform1fv(coeffLoc, new Float32Array(coeffs));
-    drawScene(ctx);
-  });
-
-
   const cube = createUnitCube(gl, program);
   const ctx: AppContext = {
     gl, program, cube,
@@ -226,10 +185,17 @@ window.addEventListener('load', async () => {
     viewMode: 1,
     curSurface: 1,
   };
+  (window as any).ctx = ctx;
 
   gl.clearColor(0.5, 0.5, 0.5, 1);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
+
+  // Init Koefizienten beim Start setzen
+  const initialCoeffs = (window as any).getUserCoeffs?.();
+  if (initialCoeffs?.length === 20) {
+    gl.uniform1fv(coeffLoc, new Float32Array(initialCoeffs));
+  }
 
   canvas.addEventListener('mousedown', e => {
     ctx.mousePressed = true;
@@ -243,13 +209,13 @@ window.addEventListener('load', async () => {
     const p0 = mouseToTrackball(gl, ctx.mousePos);
     const p1 = mouseToTrackball(gl, newPos);
     const rot = trackball(p0, p1);
-    quat.multiply(ctx.qNow, rot, ctx.qNow);  // ← alternativ: ctx.qNow * rot
+    quat.multiply(ctx.qNow, rot, ctx.qNow);
     vec2.copy(ctx.mousePos, newPos);
     drawScene(ctx);
   });
 
   canvas.addEventListener('wheel', e => {
-    ctx.zoom *= e.deltaY > 0 ? 1/1.1 : 1.1;
+    ctx.zoom *= e.deltaY > 0 ? 1 / 1.1 : 1.1;
     drawScene(ctx);
   });
 
@@ -267,6 +233,7 @@ window.addEventListener('load', async () => {
     drawScene(ctx);
     requestAnimationFrame(renderLoop);
   }
+
   window.addEventListener('resize', () => {
     resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);

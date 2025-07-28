@@ -44,6 +44,7 @@
 </head>
 <body>
   <canvas id="glcanvas"></canvas>
+
   <div id="controls">
     <label>View:
       <select id="viewMode">
@@ -61,7 +62,6 @@
     </label>
     <br/><br/>
     <div id="coeffContainer"></div>
-    <button id="applyCoeffs">Update Surface</button>
   </div>
 
   <script type="module">
@@ -75,7 +75,6 @@
       "1"
     ];
 
-    // default sphere
     const cubicSurface = [
       0, 0, 0, 
       0, 0, 0, 0, 0, 0, 0,
@@ -84,91 +83,6 @@
       0, 0, 0, -1
     ];
 
-
-    /*
-    // default sphere
-    const cubicSurface = [
-      0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 0,
-      1, 1, 1,
-      0, 0, 0,
-      0, 0, 0, -1
-    ];
-
-    // Clebsch
-    const cubicSurface = [
-      81, 81, 81, 
-      -189, -189, -189, -189, -189, -189, 54,
-      -9, -9, -9, 
-      126, 126, 126, 
-      -9, -9, -9, 1
-    ];
-  
-    // Cayley-Kubik
-    const cubicSurface = [
-      0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 1,
-      0, 0, 0, 
-      0, 0, 0, 
-      0, 1, 1, 
-      1
-    ];
-
-
-    // Monkey Saddle
-    const cubicSurface = [
-      1, 0, 0, 
-      0, 0, 0, 0, -3, 0, 0,
-      0, 0, 0, 
-      0, 0, 0, 
-      0, 0, -1, 
-      0
-    ];
-
-
-    // Cubic Cylinder
-    const cubicSurface = [
-      1, 1, 0, 
-      0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 
-      0, 0, 0, 
-      0, 0, -1, 
-      0
-    ];
-
-
-    // General Saddle Surface
-    const cubicSurface = [
-      0, 0, 1, 
-      0, 0, 0, 0, 0, 0, 0,
-      1, -1, 0, 
-      0, 0, 0, 
-      0, 0, 0, 
-      0
-    ];
-    
-    // Cayley 2 (Problem mit dem cubic solver)
-    const cubicSurface = [
-      -1.6, 0, 1, 
-      0, 0, 0, 0, 4.8, 0, 0,
-      0, 0.8, 0, 
-      0, 0, 0,
-      0, 0, 0, 
-      0
-    ];
-
-
-    // Crosspropeller
-    const cubicSurface = [
-      0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 1,
-      1, 0.1, 0, 
-      0, 0, 0, 
-      0, 0, 0, 
-      0
-    ];
-    */
-   
     const coeffInputs = [];
 
     for (let i = 0; i < 20; i++) {
@@ -195,10 +109,12 @@
         slider.min = (val - 5).toFixed(1);
         slider.max = (val + 5).toFixed(1);
         slider.value = val.toString();
+        triggerUpdate();
       });
 
       slider.addEventListener("input", () => {
         numberInput.value = slider.value;
+        triggerUpdate();
       });
 
       group.appendChild(label);
@@ -209,9 +125,21 @@
       coeffInputs.push(numberInput);
     }
 
-    // Export: Zugriff von TypeScript aus
+    // Zugriff aus TypeScript
     globalThis.getUserCoeffs = () => coeffInputs.map(input => parseFloat(input.value) || 0);
     globalThis.getUserCoeffs.inputs = coeffInputs;
+
+    function triggerUpdate() {
+      const coeffs = coeffInputs.map(input => parseFloat(input.value) || 0);
+      const gl = window.ctx?.gl;
+      const program = window.ctx?.program;
+      const coeffLoc = gl?.getUniformLocation(program, "uCoeffs");
+      if (gl && program && coeffLoc) {
+        gl.useProgram(program);
+        gl.uniform1fv(coeffLoc, new Float32Array(coeffs));
+        window.ctx && window.drawScene && window.drawScene(window.ctx); // Echtzeit-Render
+      }
+    }
   </script>
 
   <script type="module" src="./cubicSurface.ts"></script>
