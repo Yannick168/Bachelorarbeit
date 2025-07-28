@@ -75,16 +75,18 @@
       "1"
     ];
 
+    // Cayley 2 (Problem mit dem cubic solver)
     const cubicSurface = [
-      0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 0,
-      1, 1, 1,
+      -1.6, 0, 1, 
+      0, 0, 0, 0, 4.8, 0, 0,
+      0, 0.8, 0, 
       0, 0, 0,
-      0, 0, 0, -1
+      0, 0, 0, 
+      0
     ];
 
 
-        /*
+    /*
     // default sphere
     const cubicSurface = [
       0, 0, 0, 
@@ -184,8 +186,8 @@
 
       const slider = document.createElement("input");
       slider.type = "range";
-      slider.min = (cubicSurface[i] - 5).toString();
-      slider.max = (cubicSurface[i] + 5).toString();
+      slider.min = (cubicSurface[i] - 10).toString();
+      slider.max = (cubicSurface[i] + 10).toString();
       slider.step = "0.1";
       slider.value = cubicSurface[i].toString();
 

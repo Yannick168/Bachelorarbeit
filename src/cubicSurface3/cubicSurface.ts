@@ -71,10 +71,11 @@ function compileShaderProgram(gl: WebGL2RenderingContext, vsSource: string, fsSo
   return program;
 }
 
+const r = 3; //bounding box size
 function createUnitCube(gl: WebGL2RenderingContext, program: WebGLProgram): UnitCube {
   const vbo = new Float32Array([
-    -1, -1, -1, 1, -1, -1, -1, 1, -1, 1, 1, -1,
-    -1, -1,  1, 1, -1,  1, -1, 1,  1, 1, 1,  1
+    -r, -r, -r, r, -r, -r, -r, r, -r, r, r, -r,
+    -r, -r,  r, r, -r,  r, -r, r,  r, r, r,  r
   ]);
   const ibo = new Uint16Array([
     0,2,1, 1,2,3, 4,5,6, 6,5,7, 0,5,4, 0,1,5,
@@ -181,7 +182,7 @@ window.addEventListener('load', async () => {
     qNow: quat.create(),
     mousePos: vec2.create(),
     mousePressed: false,
-    zoom: 1.0,
+    zoom: 1,
     viewMode: 1,
     curSurface: 1,
   };
