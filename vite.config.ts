@@ -12,13 +12,11 @@ export default defineConfig({
         surface_01: resolve(__dirname, 'parametricSurface_01.html'),
         catenoid: resolve(__dirname, 'src/catenoid/catenoid.html'),
         catenoidHelicoid: resolve(__dirname, 'src/catenoidHelicoid/catenoidHelicoid.html'),
-        cone: resolve(__dirname, 'src/cone/cone.html'),
         cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
         epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
         hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
         surface_evolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
-        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html'),
-        test: resolve(__dirname, 'src/test/test.html')
+        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html')
       }
     }
   }
