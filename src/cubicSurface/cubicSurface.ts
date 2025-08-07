@@ -282,4 +282,19 @@ window.addEventListener('load', async () => {
   });
 
   renderLoop();
+  window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (data.type === 'updateCubicSurface') {
+    ctx.viewMode = data.viewMode;
+    ctx.curSurface = data.surfaceMode;
+
+    const coeffLoc = gl.getUniformLocation(ctx.program, "uCoeffs");
+    if (coeffLoc && Array.isArray(data.coeffs) && data.coeffs.length === 20) {
+      gl.useProgram(ctx.program);
+      gl.uniform1fv(coeffLoc, new Float32Array(data.coeffs));
+    }
+    drawScene(ctx);
+    } 
+  })
+  
 });
