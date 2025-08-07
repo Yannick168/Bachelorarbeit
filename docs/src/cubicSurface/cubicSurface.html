@@ -16,58 +16,14 @@
       width: 100vw;
       height: 100vh;
     }
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.95);
-      padding: 10px;
-      border-radius: 6px;
-      font-family: sans-serif;
-      max-height: 95vh;
-      overflow-y: auto;
-      max-width: 420px;
-    }
-    .coeff-group {
-      margin-bottom: 8px;
-    }
-    input[type="number"] {
-      width: 60px;
-    }
-    input[type="range"] {
-      width: 200px;
-    }
-    label {
-      font-weight: bold;
-    }
   </style>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurface-Au1_529z.js"></script>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurface-y3Y86ZWv.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/mat4-DousPgjw.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/vec3-Er0YIGI6.js">
 </head>
 <body>
   <canvas id="glcanvas"></canvas>
-
-  <div id="controls">
-    <label>View:
-      <select id="viewMode">
-        <option value="1">Perspective</option>
-        <option value="2">Orthographic</option>
-        <option value="3">Stereo</option>
-      </select>
-    </label>
-    <br/><br/>
-    <label>Surface:
-      <select id="surfaceMode">
-        <option value="1">Benutzerdefiniert</option>
-        <option value="2">Clebsch</option>
-      </select>
-    </label>
-    <br/><br/>
-    <div id="coeffContainer"></div>
-  </div>
-
 
 </body>
 </html>
