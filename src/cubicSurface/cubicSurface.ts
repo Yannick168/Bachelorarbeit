@@ -71,15 +71,15 @@ function compileShaderProgram(gl: WebGL2RenderingContext, vsSource: string, fsSo
   return program;
 }
 
-const r = 3; // bounding box size
+const r = 3; //bounding box size
 function createUnitCube(gl: WebGL2RenderingContext, program: WebGLProgram): UnitCube {
   const vbo = new Float32Array([
-    -r, -r, -r,  r, -r, -r,  -r,  r, -r,  r,  r, -r,
-    -r, -r,  r,  r, -r,  r,  -r,  r,  r,  r,  r,  r
+    -r, -r, -r, r, -r, -r, -r, r, -r, r, r, -r,
+    -r, -r,  r, r, -r,  r, -r, r,  r, r, r,  r
   ]);
   const ibo = new Uint16Array([
-    0,2,1,  1,2,3,  4,5,6,  6,5,7,  0,5,4,  0,1,5,
-    2,6,7,  2,7,3,  7,1,3,  7,5,1,  0,6,2,  0,4,6
+    0,2,1, 1,2,3, 4,5,6, 6,5,7, 0,5,4, 0,1,5,
+    2,6,7, 2,7,3, 7,1,3, 7,5,1, 0,6,2, 0,4,6
   ]);
   const vao = gl.createVertexArray()!;
   gl.bindVertexArray(vao);
@@ -161,6 +161,7 @@ function drawScene(ctx: AppContext) {
   mat4.multiply(ctx.modelView, ctx.modelView, rotation);
   drawCube(ctx);
 
+
   if (ctx.viewMode === 3) {
     const eyeOffset = 1.5;
     const rotation = mat4.fromQuat(mat4.create(), ctx.qNow);
@@ -201,6 +202,7 @@ function drawScene(ctx: AppContext) {
   }
 }
 
+
 window.addEventListener('load', async () => {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
   const gl = canvas.getContext('webgl2')!;
@@ -231,9 +233,9 @@ window.addEventListener('load', async () => {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
 
-  // Init Koeffizienten beim Start setzen
+  // Init Koefizienten beim Start setzen
   const initialCoeffs = (window as any).getUserCoeffs?.();
-  if (initialCoeffs?.length === 20 && coeffLoc) {
+  if (initialCoeffs?.length === 20) {
     gl.uniform1fv(coeffLoc, new Float32Array(initialCoeffs));
   }
 
@@ -259,50 +261,13 @@ window.addEventListener('load', async () => {
     drawScene(ctx);
   });
 
-  const viewSel = document.getElementById('viewMode') as HTMLSelectElement | null;
-  const surfSel = document.getElementById('surfaceMode') as HTMLSelectElement | null;
-
-  viewSel?.addEventListener('change', e => {
+  document.getElementById('viewMode')!.addEventListener('change', e => {
     ctx.viewMode = parseInt((e.target as HTMLSelectElement).value);
     drawScene(ctx);
   });
 
-  surfSel?.addEventListener('change', e => {
+  document.getElementById('surfaceMode')!.addEventListener('change', e => {
     ctx.curSurface = parseInt((e.target as HTMLSelectElement).value);
-    drawScene(ctx);
-  });
-
-  // --- postMessage Support für Jimdo-Widget ---
-  window.addEventListener('message', (e) => {
-    const data = e.data;
-    if (!data || data.type !== 'updateCubicSurface') return;
-
-    // View/Surface updaten
-    if (typeof data.view === 'number') {
-      ctx.viewMode = data.view | 0;
-      if (viewSel) viewSel.value = String(ctx.viewMode);
-    }
-    if (typeof data.surface === 'number') {
-      ctx.curSurface = data.surface | 0;
-      if (surfSel) surfSel.value = String(ctx.curSurface);
-    }
-
-    // Koeffizienten-Uniform setzen
-    if (Array.isArray(data.coeffs) && data.coeffs.length === 20) {
-      if (coeffLoc) {
-        gl.useProgram(program);
-        gl.uniform1fv(coeffLoc, new Float32Array(data.coeffs));
-      }
-      // Falls lokale Inputs existieren, spiegeln
-      const getter: any = (window as any).getUserCoeffs;
-      if (getter?.inputs) {
-        data.coeffs.forEach((v: number, i: number) => {
-          const el = getter.inputs[i];
-          if (el) el.value = String(v);
-        });
-      }
-    }
-
     drawScene(ctx);
   });
 
