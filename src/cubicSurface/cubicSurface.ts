@@ -223,7 +223,7 @@ window.addEventListener('load', async () => {
     qNow: quat.create(),
     mousePos: vec2.create(),
     mousePressed: false,
-    zoom: 1,
+    zoom: 0.5,
     viewMode: 1,
     curSurface: 1,
   };
