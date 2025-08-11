@@ -9,3 +9,88 @@ grid breakpoints (bootstrap)
 
 - Linzenzen angeben (three.js, mathjax, vite, etc.), npm license-report
 - kubische flächen
+
+
+    /*
+    // default sphere
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1,
+      0, 0, 0,
+      0, 0, 0, -1
+    ];
+
+    // Clebsch
+    const cubicSurface = [
+      81, 81, 81, 
+      -189, -189, -189, -189, -189, -189, 54,
+      -9, -9, -9, 
+      126, 126, 126, 
+      -9, -9, -9, 1
+    ];
+  
+    // Cayley-Kubik
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 1,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 1, 1, 
+      1
+    ];
+
+
+    // Monkey Saddle
+    const cubicSurface = [
+      1, 0, 0, 
+      0, 0, 0, 0, -3, 0, 0,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 0, -1, 
+      0
+    ];
+
+
+    // Cubic Cylinder
+    const cubicSurface = [
+      1, 1, 0, 
+      0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 0, -1, 
+      0
+    ];
+
+
+    // General Saddle Surface
+    const cubicSurface = [
+      0, 0, 1, 
+      0, 0, 0, 0, 0, 0, 0,
+      1, -1, 0, 
+      0, 0, 0, 
+      0, 0, 0, 
+      0
+    ];
+    
+    // Cayley 2 (Problem mit dem cubic solver)
+    const cubicSurface = [
+      -1.6, 0, 1, 
+      0, 0, 0, 0, 4.8, 0, 0,
+      0, 0.8, 0, 
+      0, 0, 0,
+      0, 0, 0, 
+      0
+    ];
+
+
+    // Crosspropeller
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 1,
+      1, 0.1, 0, 
+      0, 0, 0, 
+      0, 0, 0, 
+      0
+    ];
+    */

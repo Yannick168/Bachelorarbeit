@@ -202,6 +202,8 @@ function drawScene(ctx: AppContext) {
 }
 
 
+
+
 window.addEventListener('load', async () => {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
   const gl = canvas.getContext('webgl2')!;
