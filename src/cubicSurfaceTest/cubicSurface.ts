@@ -254,9 +254,10 @@ window.addEventListener('load', async () => {
   });
 
   canvas.addEventListener('wheel', e => {
+    e.preventDefault(); // verhindert Scrollen der übergeordneten Seite
     ctx.zoom *= e.deltaY > 0 ? 1 / 1.1 : 1.1;
     drawScene(ctx);
-  });
+  }, { passive: false });
 
   document.getElementById('viewMode')!.addEventListener('change', e => {
     ctx.viewMode = parseInt((e.target as HTMLSelectElement).value);
