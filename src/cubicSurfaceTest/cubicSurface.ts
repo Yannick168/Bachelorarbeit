@@ -1,4 +1,6 @@
 import { mat4, vec2, vec3, quat } from 'gl-matrix';
+import vsSource from './cubicSurface.vs.glsl?raw';
+import fsSource from './cubicSurface.fs.glsl?raw';
 
 type UnitCube = {
   vao: WebGLVertexArrayObject;
@@ -43,10 +45,7 @@ function resizeCanvas(canvas: HTMLCanvasElement) {
   canvas.style.transform = "translate(-50%, -50%)";
 }
 
-async function loadShaderSource(url: string): Promise<string> {
-  const response = await fetch(url);
-  return await response.text();
-}
+
 
 function createShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)!;
@@ -209,8 +208,6 @@ window.addEventListener('load', async () => {
   resizeCanvas(canvas);
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  const vsSource = await loadShaderSource('cubicSurface.vs.glsl');
-  const fsSource = await loadShaderSource('cubicSurface.fs.glsl');
   const program = compileShaderProgram(gl, vsSource, fsSource);
   gl.useProgram(program);
 
@@ -223,7 +220,7 @@ window.addEventListener('load', async () => {
     qNow: quat.create(),
     mousePos: vec2.create(),
     mousePressed: false,
-    zoom: 1,
+    zoom: 0.5,
     viewMode: 1,
     curSurface: 1,
   };
