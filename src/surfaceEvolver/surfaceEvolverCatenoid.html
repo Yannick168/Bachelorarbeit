@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Surface Evolver (.fe) – Auto Viewer</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      canvas { display: block; }
+      #status {
+        position: fixed; top: 10px; left: 10px; z-index: 10;
+        background: rgba(255,255,255,0.9); padding: 8px 10px; border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-family: system-ui, sans-serif;
+        border: 1px solid #999;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Verwendung:
+         - Lege feViewer.html, feViewer.ts und deine model.fe in denselben Ordner.
+         - Öffne feViewer.html  -> lädt ./model.fe
+         - Oder feViewer.html?fe=deinModell.fe
+         Hinweis: TypeScript muss per Bundler (z. B. Vite) zu JS gebaut werden. -->
+    <script type="module" src="./surfaceEvolverCatenoid.ts"></script>
+  </body>
+</html>

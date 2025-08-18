@@ -8,6 +8,11 @@ uniform int uOrthographic;
 uniform int uSurface;
 uniform float uCoeffs[20];
 
+uniform bool  uShowBox;          // per TS toggeln
+uniform float uHalf;             // = r (z.B. 3.0)
+uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)
+
+
 
 out vec4 fColor;
 
@@ -124,7 +129,7 @@ float clebschIntersect(vec3 ro, vec3 rd) {
       continue;
     if (res[i] < t) {
       vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 1.0f)
+      if (dot(p,p) > 100.0f)
         continue;
       t = res[i];
     }
@@ -168,6 +173,29 @@ vec3 clebschNormal(vec3 p) {
 }
 
 
+const float EPS = 1e-4;
+
+bool rayBoxInterval(vec3 ro, vec3 rd, float r, out float tEnter, out float tExit) {
+  vec3 invRd = 1.0 / rd;            // erlaubt ±inf bei 0-Komponenten
+  vec3 t0 = (-r - ro) * invRd;
+  vec3 t1 = ( r - ro) * invRd;
+
+  vec3 tminv = min(t0, t1);
+  vec3 tmaxv = max(t0, t1);
+
+  tEnter = max(max(tminv.x, tminv.y), tminv.z);
+  tExit  = min(min(tmaxv.x, tmaxv.y), tmaxv.z);
+
+  // kleine Puffer gegen numerisches „Streifen“ an den Wänden
+  tEnter -= EPS;
+  tExit  += EPS;
+
+  return (tExit >= max(tEnter, 0.0));
+}
+
+
+
+
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c300 = coeffs[0];
   float c030 = coeffs[1];
@@ -191,8 +219,6 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c000 = coeffs[19];
 
   float coeff[4];
-  vec3 res;
-  float t = 1e20f;
 
   coeff[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
@@ -231,24 +257,25 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   
+  float tEnter, tExit;
+  if (!rayBoxInterval(ro, rd, uHalf, tEnter, tExit)) return -1.0;
+
+  vec3 res;
+  float t = 1e20f;
   int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0],res);
-  for(int i = 0; i < n; i++) {
-    if (res[i] < 0.0f)
-      continue;
-    if (res[i] < t) {
-      vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 10.0f)
-        continue;
-      t = res[i];
-    }
+  
+
+  for (int i = 0; i < n; ++i) {
+    float ti = res[i];
+    if (ti < 0.0) continue;                 // nur vorwärts
+    if (ti < tEnter || ti > tExit) continue; // Box-Clip
+    t = min(t, ti);
   }
 
-  if(t == 1e20f)
-    return (-1.0f);
-  return (t);
+  return (t == 1e20) ? -1.0 : t;
 }
 
-
+  
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c300 = uCoeffs[0];
   float c030 = uCoeffs[1];
@@ -280,7 +307,6 @@ vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
 }
 
 
-
 vec3 clebschLineNormal(vec3 p) {
   vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
   vec3 b = vec3(1.0f,-1.0f,0.0f);
@@ -289,10 +315,49 @@ vec3 clebschLineNormal(vec3 p) {
 }
 
 
+float edgeDistance(vec3 p, float r) {
+  // Distanz zu den drei Paaren |x|=r, |y|=r, |z|=r
+  vec3 d = abs(abs(p) - r);      // d.x ~ Distanz zu x=±r, etc.
+
+  // „Beide klein“ ~ Nähe zur Kante
+  float dXY = max(d.x, d.y);
+  float dXZ = max(d.x, d.z);
+  float dYZ = max(d.y, d.z);
+
+  // Nur werten, wenn die dritte Koordinate innerhalb ist (mit kleiner Toleranz)
+  float t  = r + uEdgeThickness;
+  float inX = step(abs(p.x), t);
+  float inY = step(abs(p.y), t);
+  float inZ = step(abs(p.z), t);
+
+  float BIG = 1e3;
+  float eXY = mix(BIG, dXY, inZ); // Kanten parallel Z
+  float eXZ = mix(BIG, dXZ, inY); // Kanten parallel Y
+  float eYZ = mix(BIG, dYZ, inX); // Kanten parallel X
+
+  return min(min(eXY, eXZ), eYZ);
+}
+
 
 void main() {
+  // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====
+  // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.
+  if (uShowBox) {
+    float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante
+    float aa = fwidth(d);                           // Anti-Aliasing
+    float m  = 1.0 - smoothstep(uEdgeThickness - aa,
+                                uEdgeThickness + aa, d);
+    if (m > 0.0) {
+      // reine Kante: direkt ausgeben und fertig
+      fColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);       // Kantenfarbe
+      return;
+    }
+  }
+
+  // ===== Dein bisheriger Ray-Setup =====
   vec3 ro = vUV;
-  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz : vUV - uModelInverse[3].xyz;
+  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz
+                                 : vUV - uModelInverse[3].xyz;
   rd = normalize(rd);
   vec4 col = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -302,7 +367,7 @@ void main() {
   switch(uSurface) {
     case 1:
       lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-      if(lambda < 0.0f)
+      if (lambda < 0.0f)
         discard;
       p = ro + lambda * rd;
       n = cubicSurfaceNormal(p, uCoeffs);
@@ -310,18 +375,20 @@ void main() {
 
     case 2:
       lambda = clebschIntersect(ro, rd);
-      if(lambda < 0.0f)
+      if (lambda < 0.0f)
         discard;
       p = ro + lambda * rd;
       n = clebschNormal(p);
-      float lambdro = clebschLineIntersect(ro,rd);
+
+      float lambdro = clebschLineIntersect(ro, rd);
       if (lambdro > 0.0f && lambdro < lambda) {
         p = ro + lambdro * rd;
         n = clebschLineNormal(p);
-        col = vec4(1.0f,0.0f,0.0f,1.0f);
+        col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
       }
       break;
   }
+
+  // ===== Normales Shading =====
   fColor = abs(dot(rd, n)) * col;
 }
-

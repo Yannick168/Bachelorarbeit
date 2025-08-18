@@ -19,6 +19,7 @@ type AppContext = {
   zoom: number;
   viewMode: number;
   curSurface: number;
+  showBox:boolean;
 };
 
 function resizeCanvas(canvas: HTMLCanvasElement) {
@@ -70,7 +71,7 @@ function compileShaderProgram(gl: WebGL2RenderingContext, vsSource: string, fsSo
   return program;
 }
 
-const r = 3; //bounding box size
+const r = 5.0; //bounding box size
 function createUnitCube(gl: WebGL2RenderingContext, program: WebGLProgram): UnitCube {
   const vbo = new Float32Array([
     -r, -r, -r, r, -r, -r, -r, r, -r, r, r, -r,
@@ -125,6 +126,14 @@ function drawCube(ctx: AppContext) {
   gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uModelInverse'), false, invModel);
   gl.uniform1i(gl.getUniformLocation(program, 'uSurface'), ctx.curSurface);
   gl.uniform1i(gl.getUniformLocation(program, 'uOrthographic'), ctx.viewMode === 2 ? 1 : 0);
+
+  // Toggle aus deiner App-Logik
+  gl.uniform1i(gl.getUniformLocation(program, 'uShowBox'), ctx.showBox ? 1 : 0);
+  // Halbkante r (du nutzt bereits r=3)
+  gl.uniform1f(gl.getUniformLocation(program, 'uHalf'), r);
+  // Linienstärke (Feintuning)
+  gl.uniform1f(gl.getUniformLocation(program, 'uEdgeThickness'), 0.03);
+
 
   gl.bindVertexArray(ctx.cube.vao);
   gl.drawElements(gl.TRIANGLES, ctx.cube.iboSize, gl.UNSIGNED_SHORT, 0);
@@ -225,6 +234,7 @@ window.addEventListener('load', async () => {
     zoom: 0.5,
     viewMode: 1,
     curSurface: 1,
+    showBox: true
   };
   (window as any).ctx = ctx;
 
