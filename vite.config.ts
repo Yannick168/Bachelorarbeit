@@ -15,8 +15,9 @@ export default defineConfig({
         cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
         epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
         hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
-        surface_evolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
-        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html')
+        surfaceEvolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
+        cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html'),
+        surfaceEvolverCatenoid: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverCatenoid.html'),
       }
     }
   }
