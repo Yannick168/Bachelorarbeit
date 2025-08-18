@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import defaultFeUrl from './test.fe?url';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -166,9 +167,12 @@ function frameObject(obj: THREE.Object3D) {
 // Auto-Load beim Start
 // ----------------------------
 async function loadFEAtStart() {
-  const url = new URL(window.location.href);
-  const feName = url.searchParams.get('fe') || 'test.fe';
-  const feUrl = new URL(feName, window.location.href).toString();
+  const params = new URLSearchParams(location.search);
+  const feParam = params.get('fe');
+
+  // Wenn ?fe= gesetzt ist, erwarten wir die Datei unter BASE_URL (-> public/ oder statisch kopiert).
+  // Sonst nehmen wir die gebundelte Default-Datei aus src.
+  const feUrl = feParam ? (import.meta.env.BASE_URL + feParam) : defaultFeUrl;
 
   const res = await fetch(feUrl);
   if (!res.ok) throw new Error(`Konnte ${feUrl} nicht laden (${res.status})`);

@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   base: '/Bachelorarbeit/',
-  assetsInclude: ['**/*.glsl'],
+  assetsInclude: ['**/*.glsl', '**/*.fe'],
   build: {
     outDir: 'docs',
     rollupOptions: {
