@@ -18,6 +18,7 @@ export default defineConfig({
         surfaceEvolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
         cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html'),
         surfaceEvolverCatenoid: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverCatenoid.html'),
+        surfaceEvolverHNCusp: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverHNCusp.html'),
       }
     }
   }
