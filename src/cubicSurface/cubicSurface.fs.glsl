@@ -8,6 +8,10 @@ uniform int uOrthographic;
 uniform int uSurface;
 uniform float uCoeffs[20];
 
+uniform bool  uShowBox;          // per TS toggeln
+uniform float uHalf;             // = r (z.B. 3.0)
+uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)
+
 
 out vec4 fColor;
 
@@ -118,13 +122,13 @@ float clebschIntersect(vec3 ro, vec3 rd) {
              + 126.0f*ro.x*ro.y - 189.0f*ro.x*ro.z*ro.z + 126.0f*ro.x*ro.z - 9.0f*ro.x + 81.0f*ro.y*ro.y*ro.y - 189.0f*ro.y*ro.y*ro.z 
              - 9.0f*ro.y*ro.y - 189.0f*ro.y*ro.z*ro.z + 126.0f*ro.y*ro.z - 9.0f*ro.y + 81.0f*ro.z*ro.z*ro.z - 9.0f*ro.z*ro.z - 9.0f*ro.z + 1.0f;
   
-  int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0],res);
+  int n = cubic(coeff[3], coeff[2], coeff[1], coeff[0], res);
   for(int i = 0; i < n; i++) {
     if (res[i] < 0.0f)
       continue;
     if (res[i] < t) {
       vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 1.0f)
+      if (dot(p,p) > 100.0f)
         continue;
       t = res[i];
     }
@@ -168,6 +172,61 @@ vec3 clebschNormal(vec3 p) {
 }
 
 
+const float EPS = 1e-4;
+
+
+// Robuster Ray–AABB-Test (Slab-Methode) für [-h, h]^3
+bool rayAABB(vec3 ro, vec3 rd, float h, out float tNear, out float tFar) {
+    vec3 invD = 1.0 / rd;
+    vec3 t0 = (vec3(-h) - ro) * invD;
+    vec3 t1 = (vec3( h) - ro) * invD;
+    vec3 tmin = min(t0, t1);
+    vec3 tmax = max(t0, t1);
+    tNear = max(max(tmin.x, tmin.y), tmin.z);
+    tFar  = min(min(tmax.x, tmax.y), tmax.z);
+    return tFar > max(tNear, 0.0);
+}
+
+  
+vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
+  float c300 = coeffs[0];
+  float c030 = coeffs[1];
+  float c003 = coeffs[2];
+  float c210 = coeffs[3];
+  float c201 = coeffs[4];
+  float c021 = coeffs[5];
+  float c012 = coeffs[6];
+  float c120 = coeffs[7];
+  float c102 = coeffs[8];
+  float c111 = coeffs[9];
+  float c200 = coeffs[10];
+  float c020 = coeffs[11];
+  float c002 = coeffs[12];
+  float c101 = coeffs[13];
+  float c110 = coeffs[14];
+  float c011 = coeffs[15];
+  float c100 = coeffs[16];
+  float c010 = coeffs[17];
+  float c001 = coeffs[18];
+  float c000 = coeffs[19];
+  vec3 n;
+
+  n.x = c100 + c101*p.z + c102*pow(p.z, 2.0) + c110*p.y + c111*p.y*p.z + c120*pow(p.y, 2.0) + 2.0*c200*p.x + 2.0*c201*p.x*p.z + 2.0*c210*p.x*p.y + 3.0*c300*pow(p.x, 2.0);
+  n.y = c010 + c011*p.z + c012*pow(p.z, 2.0) + 2.0*c020*p.y + 2.0*c021*p.y*p.z + 3.0*c030*pow(p.y, 2.0) + c110*p.x + c111*p.x*p.z + 2.0*c120*p.x*p.y + c210*pow(p.x, 2.0);
+  n.z = c001 + 2.0*c002*p.z + 3.0*c003*pow(p.z, 2.0) + c011*p.y + 2.0*c012*p.y*p.z + c021*pow(p.y, 2.0) + c101*p.x + 2.0*c102*p.x*p.z + c111*p.x*p.y + c201*pow(p.x, 2.0);
+
+  return(normalize(n));
+}
+
+
+vec3 clebschLineNormal(vec3 p) {
+  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
+  vec3 b = vec3(1.0f,-1.0f,0.0f);
+  vec3 n = cross(b,cross(b,p-a));
+  return(normalize(n));
+}
+
+
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c300 = coeffs[0];
   float c030 = coeffs[1];
@@ -191,8 +250,6 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c000 = coeffs[19];
 
   float coeff[4];
-  vec3 res;
-  float t = 1e20f;
 
   coeff[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
@@ -231,16 +288,20 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   
-  int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0],res);
-  for(int i = 0; i < n; i++) {
-    if (res[i] < 0.0f)
-      continue;
-    if (res[i] < t) {
-      vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 10.0f)
-        continue;
-      t = res[i];
-    }
+  float tNear, tFar;
+  if (!rayAABB(ro, rd, uHalf, tNear, tFar)) return -1.0;
+  tNear = max(tNear, EPS);
+
+  vec3 res;
+  float t = 1e20f;
+  int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0], res);
+  
+  // Kandidaten filtern auf Intervall
+  for (int i = 0; i < n; ++i) {
+    float ti = res[i];
+    if (ti < 0.0)      continue;
+    if (ti < tNear || ti > tFar) continue;
+    t = min(t, ti);
   }
 
   if(t == 1e20f)
@@ -249,52 +310,55 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
 }
 
 
-vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
-  float c300 = uCoeffs[0];
-  float c030 = uCoeffs[1];
-  float c003 = uCoeffs[2];
-  float c210 = uCoeffs[3];
-  float c201 = uCoeffs[4];
-  float c021 = uCoeffs[5];
-  float c012 = uCoeffs[6];
-  float c120 = uCoeffs[7];
-  float c102 = uCoeffs[8];
-  float c111 = uCoeffs[9];
-  float c200 = uCoeffs[10];
-  float c020 = uCoeffs[11];
-  float c002 = uCoeffs[12];
-  float c101 = uCoeffs[13];
-  float c110 = uCoeffs[14];
-  float c011 = uCoeffs[15];
-  float c100 = uCoeffs[16];
-  float c010 = uCoeffs[17];
-  float c001 = uCoeffs[18];
-  float c000 = uCoeffs[19];
-  vec3 n;
 
-  n.x = c100 + c101*p.z + c102*pow(p.z, 2.0) + c110*p.y + c111*p.y*p.z + c120*pow(p.y, 2.0) + 2.0*c200*p.x + 2.0*c201*p.x*p.z + 2.0*c210*p.x*p.y + 3.0*c300*pow(p.x, 2.0);
-  n.y = c010 + c011*p.z + c012*pow(p.z, 2.0) + 2.0*c020*p.y + 2.0*c021*p.y*p.z + 3.0*c030*pow(p.y, 2.0) + c110*p.x + c111*p.x*p.z + 2.0*c120*p.x*p.y + c210*pow(p.x, 2.0);
-  n.z = c001 + 2.0*c002*p.z + 3.0*c003*pow(p.z, 2.0) + c011*p.y + 2.0*c012*p.y*p.z + c021*pow(p.y, 2.0) + c101*p.x + 2.0*c102*p.x*p.z + c111*p.x*p.y + c201*pow(p.x, 2.0);
 
-  return(normalize(n));
+float edgeDistance(vec3 p, float r) {
+  // Distanz zu den drei Paaren |x|=r, |y|=r, |z|=r
+  vec3 d = abs(abs(p) - r);      // d.x ~ Distanz zu x=±r, etc.
+
+  // „Beide klein“ ~ Nähe zur Kante
+  float dXY = max(d.x, d.y);
+  float dXZ = max(d.x, d.z);
+  float dYZ = max(d.y, d.z);
+
+  // Nur werten, wenn die dritte Koordinate innerhalb ist (mit kleiner Toleranz)
+  float t  = r + uEdgeThickness;
+  float inX = step(abs(p.x), t);
+  float inY = step(abs(p.y), t);
+  float inZ = step(abs(p.z), t);
+
+  float BIG = 1e3;
+  float eXY = mix(BIG, dXY, inZ); // Kanten parallel Z
+  float eXZ = mix(BIG, dXZ, inY); // Kanten parallel Y
+  float eYZ = mix(BIG, dYZ, inX); // Kanten parallel X
+
+  return min(min(eXY, eXZ), eYZ);
 }
-
-
-
-vec3 clebschLineNormal(vec3 p) {
-  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
-  vec3 b = vec3(1.0f,-1.0f,0.0f);
-  vec3 n = cross(b,cross(b,p-a));
-  return(normalize(n));
-}
-
 
 
 void main() {
+  // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====
+  // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.
+  if (uShowBox) {
+    float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante
+    float aa = fwidth(d);                           // Anti-Aliasing
+    float m  = 1.0 - smoothstep(uEdgeThickness - aa,
+                                uEdgeThickness + aa, d);
+    if (m > 0.0) {
+      // reine Kante: direkt ausgeben und fertig
+      fColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);       // Kantenfarbe
+      return;
+    }
+  }
+
+  // ===== Dein bisheriger Ray-Setup =====
   vec3 ro = vUV;
-  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz : vUV - uModelInverse[3].xyz;
+  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz
+                                 : vUV - uModelInverse[3].xyz;
   rd = normalize(rd);
-  vec4 col = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+  ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection
+  
+  vec4 col = vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
   vec3 p, n;
   float lambda;
@@ -302,7 +366,7 @@ void main() {
   switch(uSurface) {
     case 1:
       lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-      if(lambda < 0.0f)
+      if (lambda < 0.0f)
         discard;
       p = ro + lambda * rd;
       n = cubicSurfaceNormal(p, uCoeffs);
@@ -310,18 +374,21 @@ void main() {
 
     case 2:
       lambda = clebschIntersect(ro, rd);
-      if(lambda < 0.0f)
+      if (lambda < 0.0f)
         discard;
       p = ro + lambda * rd;
       n = clebschNormal(p);
-      float lambdro = clebschLineIntersect(ro,rd);
+
+      float lambdro = clebschLineIntersect(ro, rd);
       if (lambdro > 0.0f && lambdro < lambda) {
         p = ro + lambdro * rd;
         n = clebschLineNormal(p);
-        col = vec4(1.0f,0.0f,0.0f,1.0f);
+        col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
       }
       break;
   }
-  fColor = abs(dot(rd, n)) * col;
-}
 
+  // Headlight-/View-Shading
+  float shade = abs(dot(normalize(rd), normalize(n)));
+  fColor = vec4(col.rgb * shade, col.a);
+}
