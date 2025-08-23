@@ -100,18 +100,17 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
 
 const float EPS = 1e-4;
 
-
-// Robuster Ray–AABB-Test (Slab-Methode) für [-h, h]^3
 bool rayAABB(vec3 ro, vec3 rd, float h, out float tNear, out float tFar) {
     vec3 invD = 1.0 / rd;
     vec3 t0 = (vec3(-h) - ro) * invD;
     vec3 t1 = (vec3( h) - ro) * invD;
     vec3 tmin = min(t0, t1);
     vec3 tmax = max(t0, t1);
-    float tNear = max(max(tmin.x, tmin.y), tmin.z);
-    float tFar  = min(min(tmax.x, tmax.y), tmax.z);
+    tNear = max(max(tmin.x, tmin.y), tmin.z);
+    tFar  = min(min(tmax.x, tmax.y), tmax.z);
     return tFar > max(tNear, 0.0);
 }
+
 
   
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
