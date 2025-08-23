@@ -301,8 +301,6 @@ void main() {\r
     discard;\r
   p = ro + lambda * rd;\r
   n = cubicSurfaceNormal(p, uCoeffs);\r
-  break;\r
-\r
 \r
   // Headlight-/View-Shading\r
   float shade = abs(dot(normalize(rd), normalize(n)));\r
