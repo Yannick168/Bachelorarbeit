@@ -291,7 +291,7 @@ void main() {\r
   rd = normalize(rd);\r
   ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection\r
   \r
-  vec4 col = vec4(0.0f, 1.0f, 0.0f, 1.0f);\r
+  vec4 col = vec4(1.0f, 0.0f, 0.0f, 1.0f);\r
 \r
   vec3 p, n;\r
   float lambda;\r
