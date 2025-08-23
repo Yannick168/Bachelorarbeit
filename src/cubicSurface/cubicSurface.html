@@ -1,107 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cubic Surface Viewer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cubic Surface Renderer</title>
   <style>
-    html, body { margin:0; padding:0; height:100%; background:#000; }
+    html, body { height: 100%; margin: 0; background: #fff; }
     #glcanvas { display:block; width:100vw; height:100vh; }
-    /* Unsichtbare Fallback-Controls für bestehende TS-Listener */
-    .hidden-control { position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none; }
   </style>
 </head>
 <body>
   <canvas id="glcanvas"></canvas>
-
-  <!-- Unsichtbare Fallback-Controls: werden vom Parent per postMessage gesetzt -->
-  <select id="viewMode" class="hidden-control">
-    <option value="1">Perspective</option>
-    <option value="2">Orthographic</option>
-    <option value="3">Stereo</option>
-  </select>
-
-  <select id="surfaceMode" class="hidden-control">
-    <option value="1">Benutzerdefiniert</option>
-    <option value="2">Clebsch</option>
-  </select>
-
-  <script type="module">
-    // 1) Stub für initiale Koefs (bis Parent Werte postet)
-    const ZERO20 = new Array(20).fill(0);
-    // Sphere als sanftere Voreinstellung: x²+y²+z²-1 = 0
-    const SPHERE20 = [
-      0,0,0,  0,0,0,0,0,0,0,  1,1,1,  0,0,0,  0,0,0, -1
-    ];
-    // Diese Funktion wird von cubicSurface.ts beim Start abgefragt
-    globalThis.getUserCoeffs = () => SPHERE20.slice();
-
-    // 2) PostMessage-Bridge: Parent -> Child (diese Seite)
-    function setSelectAndDispatch(selectEl, value) {
-      if (!selectEl) return;
-      if (selectEl.value !== String(value)) {
-        selectEl.value = String(value);
-        // change-Event feuern, damit deine bestehenden TS-Listener reagieren
-        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }
-
-    // Halte GL-Kontext/Programm, um Uniforms bei Messages direkt zu setzen
-    let glRef = null, programRef = null, coeffLocRef = null;
-
-    window.addEventListener('message', (e) => {
-      const data = e.data || {};
-      if (data.type === 'coeffs' && Array.isArray(data.coeffs) && data.coeffs.length === 20) {
-        // Uniform live updaten
-        if (glRef && programRef && coeffLocRef) {
-          glRef.useProgram(programRef);
-          glRef.uniform1fv(coeffLocRef, new Float32Array(data.coeffs));
-          // Wenn drawScene am Window hängt (aus TS), sofort neu zeichnen
-          if (window.ctx && window.drawScene) window.drawScene(window.ctx);
-        } else {
-          // Falls noch nicht initialisiert: die Stub-Funktion umschreiben,
-          // damit TS beim Start gleich die richtigen Werte bekommt.
-          globalThis.getUserCoeffs = () => data.coeffs.slice();
-        }
-      }
-      if (data.type === 'controls') {
-        const { viewMode, surfaceMode } = data;
-        setSelectAndDispatch(document.getElementById('viewMode'), viewMode);
-        setSelectAndDispatch(document.getElementById('surfaceMode'), surfaceMode);
-      }
-    });
-
-    // 3) Nach dem Init dem Parent signalisieren, dass wir bereit sind
-    function notifyReady() {
-      try { window.parent && window.parent.postMessage({ type: 'ready' }, '*'); } catch {}
-    }
-
-    // 4) Hook um GL-Objekte nach Init zugänglich zu machen:
-    // cubicSurface.ts setzt (window as any).ctx, wir hängen uns in den Load ein
-    const _defineCtx = Object.defineProperty;
-    _defineCtx(window, 'ctx', {
-      set(v) {
-        // ctx gesetzt → GL-Zugriffe vorbereiten
-        this.__ctx = v;
-        try {
-          glRef = v?.gl || null;
-          const prog = v?.program || null;
-          if (glRef && prog) {
-            programRef = prog;
-            coeffLocRef = glRef.getUniformLocation(programRef, 'uCoeffs');
-          }
-        } catch {}
-        return true;
-      },
-      get() { return this.__ctx; },
-      configurable: true
-    });
-
-    // Parent informieren, sobald das Modul geladen ist
-    window.addEventListener('load', notifyReady);
-  </script>
-
-  <!-- Dein bestehendes Rendering bleibt unverändert -->
   <script type="module" src="./cubicSurface.ts"></script>
 </body>
 </html>

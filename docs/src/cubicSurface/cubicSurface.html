@@ -1,36 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cubic Surface Viewer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cubic Surface Renderer</title>
   <style>
-    html, body { margin:0; padding:0; height:100%; background:#000; }
+    html, body { height: 100%; margin: 0; background: #fff; }
     #glcanvas { display:block; width:100vw; height:100vh; }
-    /* Unsichtbare Fallback-Controls für bestehende TS-Listener */
-    .hidden-control { position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none; }
   </style>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurface-C_4xDur3.js"></script>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurface-DTtWQccR.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
-  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/mat4-DousPgjw.js">
-  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/vec3-Er0YIGI6.js">
+  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/mat4-uSk0HlBj.js">
+  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/vec3-DGbGUZ3g.js">
 </head>
 <body>
-  <canvas id="glcanvas"></canvas>
-
-  <!-- Unsichtbare Fallback-Controls: werden vom Parent per postMessage gesetzt -->
-  <select id="viewMode" class="hidden-control">
-    <option value="1">Perspective</option>
-    <option value="2">Orthographic</option>
-    <option value="3">Stereo</option>
-  </select>
-
-  <select id="surfaceMode" class="hidden-control">
-    <option value="1">Benutzerdefiniert</option>
-    <option value="2">Clebsch</option>
-  </select>
-
-
-  <!-- Dein bestehendes Rendering bleibt unverändert -->
+  <canvas id="glcanvas"></canvas>
 </body>
 </html>

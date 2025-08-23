@@ -1,0 +1,280 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<div class="container my-4">204
+  <div class="row">
+    <div class="col-12">
+      <h3 class="mb-3">Cubic Surface</h3>
+    </div>
+
+    <!-- Controls -->
+    <div class="col-12">
+      <div class="p-3 bg-white rounded shadow-sm mb-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-6 col-md-3">
+            <label class="form-label mb-1">View</label>
+            <select id="viewMode" class="form-select form-select-sm">
+              <option value="1">Perspective</option>
+              <option value="2">Orthographic</option>
+              <option value="3">Stereo</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label mb-1">Surface</label>
+            <select id="surfaceMode" class="form-select form-select-sm">
+              <option value="1">Benutzerdefiniert</option>
+              <option value="2">Clebsch</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slider -->
+      <div id="sliderContainer" class="p-3 bg-white rounded shadow-sm mb-3"></div>
+
+      <!-- Formel-Box (NEU) -->
+      <div id="formulaBox" class="p-3 bg-white rounded shadow-sm mb-3">
+        <div class="small text-muted mb-1">Implizite Gleichung</div>
+        <div id="formulaText" style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size: 14px; line-height: 1.4;">
+          f(x,y,z) = 0
+        </div>
+      </div>
+    </div>
+
+    <!-- Renderer -->
+    <div class="col-12">
+      <div class="ratio ratio-16x9">
+        <iframe id="cubicFrame" class="w-100 h-100 border-0" allowfullscreen name="cubicFrame"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* <![CDATA[ */
+// === Pfad zu deiner Render-Seite ===
+const cubicUrl = "https://yannick168.github.io/Bachelorarbeit/src/cubicSurface/cubicSurface.html";
+
+/* Monomiale & Layout */
+const monomials = [
+  "x³","y³","z³",
+  "x²y","x²z","y²z","yz²","xy²","xz²","xyz",
+  "x²","y²","z²",
+  "xz","xy","yz",
+  "x","y","z",
+  "1"
+];
+const rows = [
+  ["x³","y³","z³","x²y","x²z","y²z","yz²","xy²","xz²","xyz"],
+  ["x²","y²","z²","xz","xy","yz"],
+  ["x","y","z"],
+  ["1"]
+];
+
+/* Default: x² + y² + z² - 1 = 0 */
+const defaults = {
+  "x³":0,"y³":0,"z³":0,
+  "x²y":0,"x²z":0,"y²z":0,"yz²":0,"xy²":0,"xz²":0,"xyz":0,
+  "x²":1,"y²":1,"z²":1,
+  "xz":0,"xy":0,"yz":0,
+  "x":0,"y":0,"z":0,
+  "1":-1
+};
+
+// Optionales Preset (nur wenn du Clebsch per Slider setzen willst)
+const clebschCoeffs = null; // z.B. [c0,...,c19]
+
+/* States */
+const inputs = [];
+const sliders = [];
+
+/* Styles — responsive: 10 Slider pro Zeile */
+const ROW_STYLE   = "display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px;margin-bottom:6px;padding-bottom:8px;";
+const CELL_STYLE  = "flex:0 0 9%;max-width:9%;display:flex;flex-direction:column;align-items:center;";
+const LABEL_STYLE = "font-size:10px;font-weight:600;text-align:center;margin-bottom:2px;line-height:1.1;";
+const RANGE_STYLE = "width:100%;height:12px;padding:0;margin:0 0 2px 0;";
+const NUM_STYLE   = "width:100%;height:20px;font-size:11px;text-align:center;padding:1px;";
+
+/* Hilfsfunktionen fürs Formel-Rendering */
+const NEAR_ZERO = 1e-9;
+function isZero(n){ return Math.abs(n) < NEAR_ZERO; }
+function niceNumber(n){
+  // hübsche Darstellung: max 3 Nachkommastellen, ohne trailing zeros
+  let s = n.toFixed(3).replace(/\.?0+$/,'');
+  return s === "-0" ? "0" : s;
+}
+function formatTerm(coeff, label){
+  const abs = Math.abs(coeff);
+  const sign = coeff < 0 ? "-" : "+";
+  const isConst = (label === "1");
+
+  if (isConst) {
+    // Konstanter Term: nur Zahl, kein "·" und kein Label "1"
+    return { sign, html: niceNumber(abs) };
+  }
+
+  // Nicht-konstanter Term: 1·x -> x
+  const coeffStr = Math.abs(abs - 1) < NEAR_ZERO ? "" : niceNumber(abs) + "·";
+  return { sign, html: coeffStr + label };
+}
+
+function buildFormulaHTML(coeffs){
+  const parts = [];
+  monomials.forEach((m, i) => {
+    const c = Number(coeffs[i] ?? 0);
+    if (isZero(c)) return; // Null-Terme auslassen
+    const t = formatTerm(c, m);
+    parts.push(t.sign + " " + t.html);
+  });
+  if (parts.length === 0) return "F(x,y,z) = 0";
+
+  // Erstes Vorzeichen korrekt setzen (kein führendes '+')
+  let first = parts[0];
+  if (first.startsWith("+")) first = first.slice(2); // "+ " entfernen
+  else if (first.startsWith("-")) first = "− " + first.slice(2); // hübsches Minus
+
+  const rest = parts.slice(1).map(s => s[0] === "-" ? " − " + s.slice(2) : " + " + s.slice(2)).join("");
+  return "F(x,y,z) = " + first + rest + " = 0";
+}
+function updateFormula(){
+  const coeffs = currentCoeffs();
+  const html = buildFormulaHTML(coeffs);
+  document.getElementById("formulaText").textContent = html;
+}
+
+/* UI-Builder */
+function createSlider(mono){
+  const base = Number(defaults[mono] ?? 0);
+
+  const wrap = document.createElement("div");
+  wrap.setAttribute("style", CELL_STYLE);
+
+  const lab = document.createElement("div");
+  lab.setAttribute("style", LABEL_STYLE);
+  lab.textContent = mono;
+
+  const num = document.createElement("input");
+  num.type = "number";
+  num.className = "form-control form-control-sm";
+  num.setAttribute("style", NUM_STYLE);
+  num.step = "0.1";
+  num.value = String(base);
+
+  const rng = document.createElement("input");
+  rng.type = "range";
+  rng.className = "form-range";
+  rng.setAttribute("style", RANGE_STYLE);
+  rng.step = "0.1";
+  rng.min = (base - 5).toString();
+  rng.max = (base + 5).toString();
+  rng.value = String(base);
+
+  // datalist für Skala (Min, 0, Max)
+  const listId = "ticks-" + mono;
+  rng.setAttribute("list", listId);
+  const datalist = document.createElement("datalist");
+  datalist.id = listId;
+  [rng.min, 0, rng.max].forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    datalist.appendChild(opt);
+  });
+
+  // Events
+  rng.addEventListener("input", () => { num.value = rng.value; sendAll(); updateFormula(); });
+  num.addEventListener("input", () => {
+    const v = parseFloat(num.value);
+    if (isFinite(v)) {
+      rng.min = (v - 5).toFixed(1);
+      rng.max = (v + 5).toFixed(1);
+      rng.value = String(v);
+      datalist.innerHTML = "";
+      [rng.min, 0, rng.max].forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        datalist.appendChild(opt);
+      });
+      sendAll(); updateFormula();
+    }
+  });
+
+  // Reihenfolge: Label → Number → Slider + datalist
+  wrap.appendChild(lab);
+  wrap.appendChild(num);
+  wrap.appendChild(rng);
+  wrap.appendChild(datalist);
+
+  const idx = monomials.indexOf(mono);
+  inputs[idx] = num;
+  sliders[idx] = rng;
+  return wrap;
+}
+
+function buildSliders(){
+  const container = document.getElementById("sliderContainer");
+  container.innerHTML = "";
+  rows.forEach(rowList => {
+    const row = document.createElement("div");
+    row.setAttribute("style", ROW_STYLE);
+    rowList.forEach(m => row.appendChild(createSlider(m)));
+    container.appendChild(row);
+  });
+}
+
+function currentCoeffs(){
+  // exakt in monomials-Reihenfolge
+  return monomials.map((m, i) => {
+    const v = parseFloat(inputs[i]?.value);
+    return isFinite(v) ? v : 0;
+  });
+}
+
+/* Messaging zum Renderer */
+function sendAll(){
+  const frame = document.getElementById("cubicFrame");
+  if (!frame || !frame.contentWindow) return;
+
+  const coeffs = currentCoeffs();
+  frame.contentWindow.postMessage({ type: "coeffs", coeffs }, "*");
+
+  const viewMode = parseInt(document.getElementById("viewMode").value, 10);
+  const surfaceMode = parseInt(document.getElementById("surfaceMode").value, 10);
+  frame.contentWindow.postMessage({ type: "controls", viewMode, surfaceMode }, "*");
+}
+
+function onSurfaceChange(){
+  const surfaceMode = parseInt(document.getElementById("surfaceMode").value, 10);
+  if (surfaceMode === 2 && Array.isArray(clebschCoeffs) && clebschCoeffs.length === 20) {
+    monomials.forEach((m, i) => {
+      const newVal = clebschCoeffs[i] || 0;
+      inputs[i].value = String(newVal);
+      sliders[i].value = String(newVal);
+      sliders[i].min = (newVal - 5).toFixed(1);
+      sliders[i].max = (newVal + 5).toFixed(1);
+      const listId = "ticks-" + m;
+      const dl = sliders[i].list || document.getElementById(listId);
+      if (dl) {
+        dl.innerHTML = "";
+        [sliders[i].min, 0, sliders[i].max].forEach(val => {
+          const opt = document.createElement("option");
+          opt.value = val;
+          dl.appendChild(opt);
+        });
+      }
+    });
+  }
+  sendAll(); updateFormula();
+}
+
+/* Init */
+const frame = document.getElementById("cubicFrame");
+frame.src = cubicUrl + (cubicUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
+
+buildSliders();
+document.getElementById("viewMode").addEventListener("change", () => { sendAll(); /* View ändert nicht die Formel */ });
+document.getElementById("surfaceMode").addEventListener("change", onSurfaceChange);
+
+frame.addEventListener("load", () => setTimeout(() => { sendAll(); updateFormula(); }, 150));
+window.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "ready") { sendAll(); updateFormula(); }
+});
+/* ]]> */
+</script>

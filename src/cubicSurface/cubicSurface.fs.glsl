@@ -98,80 +98,6 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
 }
 
 
-// Clebsch's Surface
-float clebschIntersect(vec3 ro, vec3 rd) {
-
-  float coeff[4];
-  vec3 res;
-  float t = 1e20f;
-
-  coeff[3] = 81.0f*rd.x*rd.x*rd.x - 189.0f*rd.x*rd.x*rd.y - 189.0f*rd.x*rd.x*rd.z - 189.0f*rd.x*rd.y*rd.y + 54.0f*rd.x*rd.y*rd.z 
-            - 189.0f*rd.x*rd.z*rd.z + 81.0f*rd.y*rd.y*rd.y - 189.0f*rd.y*rd.y*rd.z - 189.0f*rd.y*rd.z*rd.z + 81.0f*rd.z*rd.z*rd.z;
-  coeff[2] = 243.0f*ro.x*rd.x*rd.x - 378.0f*ro.x*rd.x*rd.y - 378.0f*ro.x*rd.x*rd.z - 189.0f*ro.x*rd.y*rd.y + 54.0f*ro.x*rd.y*rd.z 
-            - 189.0f*ro.x*rd.z*rd.z - 189.0f*ro.y*rd.x*rd.x - 378.0f*ro.y*rd.x*rd.y + 54.0f*ro.y*rd.x*rd.z + 243.0f*ro.y*rd.y*rd.y 
-            - 378.0f*ro.y*rd.y*rd.z - 189.0f*ro.y*rd.z*rd.z - 189.0f*ro.z*rd.x*rd.x + 54.0f*ro.z*rd.x*rd.y - 378.0f*ro.z*rd.x*rd.z 
-            - 189.0f*ro.z*rd.y*rd.y - 378.0f*ro.z*rd.y*rd.z + 243.0f*ro.z*rd.z*rd.z - 9.0f*rd.x*rd.x + 126.0f*rd.x*rd.y + 126.0f*rd.x*rd.z 
-            - 9.0f*rd.y*rd.y + 126.0f*rd.y*rd.z - 9.0f*rd.z*rd.z;
-  coeff[1] = 243.0f*ro.x*ro.x*rd.x - 189.0f*ro.x*ro.x*rd.y - 189.0f*ro.x*ro.x*rd.z - 378.0f*ro.x*ro.y*rd.x - 378.0f*ro.x*ro.y*rd.y 
-             + 54.0f*ro.x*ro.y*rd.z - 378.0f*ro.x*ro.z*rd.x + 54.0f*ro.x*ro.z*rd.y - 378.0f*ro.x*ro.z*rd.z - 18.0f*ro.x*rd.x + 126.0f*ro.x*rd.y 
-             + 126.0f*ro.x*rd.z - 189.0f*ro.y*ro.y*rd.x + 243.0f*ro.y*ro.y*rd.y - 189.0f*ro.y*ro.y*rd.z + 54.0f*ro.y*ro.z*rd.x 
-             - 378.0f*ro.y*ro.z*rd.y - 378.0f*ro.y*ro.z*rd.z + 126.0f*ro.y*rd.x - 18.0f*ro.y*rd.y + 126.0f*ro.y*rd.z - 189.0f*ro.z*ro.z*rd.x 
-             - 189.0f*ro.z*ro.z*rd.y + 243.0f*ro.z*ro.z*rd.z + 126.0f*ro.z*rd.x + 126.0f*ro.z*rd.y - 18.0f*ro.z*rd.z - 9.0f*rd.x - 9.0f*rd.y 
-             - 9.0f*rd.z;
-  coeff[0] = 81.0f*ro.x*ro.x*ro.x - 189.0f*ro.x*ro.x*ro.y - 189.0f*ro.x*ro.x*ro.z - 9.0f*ro.x*ro.x - 189.0f*ro.x*ro.y*ro.y + 54.0f*ro.x*ro.y*ro.z
-             + 126.0f*ro.x*ro.y - 189.0f*ro.x*ro.z*ro.z + 126.0f*ro.x*ro.z - 9.0f*ro.x + 81.0f*ro.y*ro.y*ro.y - 189.0f*ro.y*ro.y*ro.z 
-             - 9.0f*ro.y*ro.y - 189.0f*ro.y*ro.z*ro.z + 126.0f*ro.y*ro.z - 9.0f*ro.y + 81.0f*ro.z*ro.z*ro.z - 9.0f*ro.z*ro.z - 9.0f*ro.z + 1.0f;
-  
-  int n = cubic(coeff[3], coeff[2], coeff[1], coeff[0], res);
-  for(int i = 0; i < n; i++) {
-    if (res[i] < 0.0f)
-      continue;
-    if (res[i] < t) {
-      vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 100.0f)
-        continue;
-      t = res[i];
-    }
-  }
-
-  if(t == 1e20f)
-    return (-1.0f);
-  return (t);
-}
-
-
-float clebschLineIntersect(vec3 ro, vec3 rd) {
-  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
-  vec3 b = vec3(1.0f,-1.0f,0.0f);
-  float coeff[3];
-  float rad = 0.01f;
-
-  vec3 bxrd = cross(b,rd);
-  vec3 bxroa = cross(b,ro-a);
-  coeff[2] = dot(bxrd,bxrd);
-  coeff[1] = 2.0f*dot(bxrd,bxroa);
-  coeff[0] = dot(bxroa,bxroa)-dot(b,b)*rad*rad;
-
-  vec2 res;
-  int s = quadratic(coeff[2],coeff[1],coeff[0],res);
-  if (s == 0) return(-1.0f);
-  if (res[0] < 0.0f && res[1] < 0.0f) return(-1.0f);
-  float t = min(res[0],res[1]);
-  vec3 p = ro + t * rd;
-  if (dot(p,p) > 1.0f) return(-1.0f);
-  return(t);
-}
-
-vec3 clebschNormal(vec3 p) {
-  vec3 n;
-
-  n.x = 243.0f*p.x*p.x - 378.0f*p.x*(p.y + p.z) - 18.0f*p.x - 189.0f*p.y*p.y + 54.0f*p.y*p.z + 126.0f*p.y - 189.0f*p.z*p.z + 126.0f*p.z - 9.0f;
-  n.y = -189.0f*p.x*p.x + 54.0f*p.x*p.z + 126.0f*p.x + 243.0f*p.y*p.y - 378.0f*p.y*(p.x + p.z) - 18.0f*p.y - 189.0f*p.z*p.z + 126.0f*p.z - 9.0f;
-  n.z = -189.0f*p.x*p.x + 54.0f*p.x*p.y + 126.0f*p.x - 189.0f*p.y*p.y + 126.0f*p.y + 243.0f*p.z*p.z - 378.0f*p.z*(p.x + p.y) - 18.0f*p.z - 9.0f;
-  return(normalize(n));
-}
-
-
 const float EPS = 1e-4;
 
 
@@ -182,8 +108,8 @@ bool rayAABB(vec3 ro, vec3 rd, float h, out float tNear, out float tFar) {
     vec3 t1 = (vec3( h) - ro) * invD;
     vec3 tmin = min(t0, t1);
     vec3 tmax = max(t0, t1);
-    tNear = max(max(tmin.x, tmin.y), tmin.z);
-    tFar  = min(min(tmax.x, tmax.y), tmax.z);
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar  = min(min(tmax.x, tmax.y), tmax.z);
     return tFar > max(tNear, 0.0);
 }
 
@@ -218,13 +144,6 @@ vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   return(normalize(n));
 }
 
-
-vec3 clebschLineNormal(vec3 p) {
-  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
-  vec3 b = vec3(1.0f,-1.0f,0.0f);
-  vec3 n = cross(b,cross(b,p-a));
-  return(normalize(n));
-}
 
 
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
@@ -363,30 +282,13 @@ void main() {
   vec3 p, n;
   float lambda;
 
-  switch(uSurface) {
-    case 1:
-      lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-      if (lambda < 0.0f)
-        discard;
-      p = ro + lambda * rd;
-      n = cubicSurfaceNormal(p, uCoeffs);
-      break;
+  lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
+  if (lambda < 0.0f)
+    discard;
+  p = ro + lambda * rd;
+  n = cubicSurfaceNormal(p, uCoeffs);
+  break;
 
-    case 2:
-      lambda = clebschIntersect(ro, rd);
-      if (lambda < 0.0f)
-        discard;
-      p = ro + lambda * rd;
-      n = clebschNormal(p);
-
-      float lambdro = clebschLineIntersect(ro, rd);
-      if (lambdro > 0.0f && lambdro < lambda) {
-        p = ro + lambdro * rd;
-        n = clebschLineNormal(p);
-        col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-      }
-      break;
-  }
 
   // Headlight-/View-Shading
   float shade = abs(dot(normalize(rd), normalize(n)));
