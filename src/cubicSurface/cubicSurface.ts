@@ -31,6 +31,7 @@ type Ctx = {
   // Controls
   viewMode: number;   // 1=persp, 2=ortho, 3=stereo
   surfaceMode: number;
+  showBox: boolean;
 
   coeffs: Float32Array;
 };
@@ -125,7 +126,7 @@ function init(): Ctx {
     mouse: vec2.create(),
     viewMode: 1,
     surfaceMode: 1,
-    // Start: Kugel x^2 + y^2 + z^2 - 1 = 0
+    showBox: true,
     coeffs: new Float32Array([ 0,0,0, 0,0,0,0,0,0,0, 1,1,1, 0,0,0, 0,0,0, -1 ])
   };
 
@@ -166,6 +167,7 @@ function init(): Ctx {
     } else if (d.type === 'controls') {
       if (typeof d.viewMode === 'number') ctx.viewMode = d.viewMode|0;
       if (typeof d.surfaceMode === 'number') ctx.surfaceMode = d.surfaceMode|0;
+       if (typeof d.showBox === 'boolean') ctx.showBox = !!d.showBox; // <- NEU
     }
   });
 
@@ -183,7 +185,7 @@ function draw(ctx: Ctx){
   // gemeinsame Einstellungen
   gl.useProgram(ctx.prog);
   gl.bindVertexArray(ctx.vao);
-  gl.uniform1i(ctx.uShowBox, 1);
+   if (ctx.uShowBox) gl.uniform1i(ctx.uShowBox, ctx.showBox ? 1 : 0); // <- NEU
   gl.uniform1f(ctx.uHalf, HALF);
   gl.uniform1f(ctx.uEdgeThickness, EDGE_THICK);
   gl.uniform1i(ctx.uSurface, ctx.surfaceMode);
@@ -252,3 +254,4 @@ window.addEventListener('load', () => {
   const ctx = init();
   loop(ctx);
 });
+
