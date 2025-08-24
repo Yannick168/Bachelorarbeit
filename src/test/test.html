@@ -1,86 +1,91 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-<!-- MathJax laden (TeX -> CHTML, dynamische Zeilenumbrüche) -->
-<script>
-  window.MathJax = {
-    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-    chtml: {
-      linebreaks: { automatic: true, width: 'container' }, // Auto-Wrap nach Containerbreite
-      displayAlign: 'left',
-      displayIndent: '0'
-    }
-  };
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-
+<script id="MathJax-script" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 <div class="container my-4">
-  <div class="row">
-    <div class="col-12">
-      <h3 class="mb-3">Cubic Surface</h3>
-    </div>
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Cubic Surface
+            </h3>
+        </div>
+        <!-- Controls -->
 
-    <!-- Controls -->
-    <div class="col-12">
-      <div class="p-3 bg-white rounded shadow-sm mb-3">
-        <div class="row g-3 align-items-end">
-          <div class="col-12 col-md-3">
-            <label class="form-label mb-1">Surface</label>
-            <select id="surfaceMode" class="form-select form-select-sm">
-              <option value="sphere">Sphere</option>
-              <option value="clebsch">Clebsch</option>
-              <option value="cayley">Cayley-Kubik</option>
-              <option value="monkeySaddle">Monkey Saddle</option>
-              <option value="cylinder">Cylinder</option>
-              <option value="crosspropeller">Crosspropeller</option>
-            </select>
-          </div>
+        <div class="col-12">
+            <div class="p-3 bg-white rounded shadow-sm mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-1">Surface</label> <select id="surfaceMode" class="form-select form-select-sm">
+                            <option value="sphere">
+                                Sphere
+                            </option>
+                            <option value="clebsch">
+                                Clebsch
+                            </option>
+                            <option value="cayley">
+                                Cayley-Kubik
+                            </option>
+                            <option value="monkeySaddle">
+                                Monkey Saddle
+                            </option>
+                            <option value="cylinder">
+                                Cylinder
+                            </option>
+                            <option value="crosspropeller">
+                                Crosspropeller
+                            </option>
+                            <option value="custom">
+                                Custom
+                            </option>
+                        </select>
+                    </div>
 
-          <div class="col-12 col-md-3">
-            <label class="form-label mb-1">View</label>
-            <select id="viewMode" class="form-select form-select-sm">
-              <option value="1">Perspective</option>
-              <option value="2">Orthographic</option>
-              <option value="3">Stereo (Rot/Cyan)</option>
-            </select>
-          </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-1">View</label> <select id="viewMode" class="form-select form-select-sm">
+                            <option value="1">
+                                Perspective
+                            </option>
+                            <option value="2">
+                                Orthographic
+                            </option>
+                            <option value="3">
+                                Stereo (Rot/Cyan)
+                            </option>
+                        </select>
+                    </div>
 
-          <!-- NEU: Volumecube-Checkbox -->
-          <div class="col-12 col-md-3">
-            <div class="form-check mt-4">
-              <input class="form-check-input" type="checkbox" id="showBox" checked />
-              <label class="form-check-label" for="showBox">Volumecube anzeigen</label>
+                    <div class="col-12 col-md-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="showBox" checked="checked" /> <label class="form-check-label" for="showBox">show Volumecube</label>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
+            <!-- Sliders -->
+
+            <div id="sliderContainer" class="p-3 bg-white rounded shadow-sm mb-3">
+            </div>
+            <!-- Formel -->
+
+            <div id="formulaBox" class="p-3 bg-white rounded shadow-sm mb-3">
+                <div id="formulaText" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size: 14px; line-height: 1.4;">
+                    F(x,y,z) = 0
+                </div>
+            </div>
         </div>
-      </div>
+        <!-- Renderer -->
 
-      <!-- Slider -->
-      <div id="sliderContainer" class="p-3 bg-white rounded shadow-sm mb-3"></div>
-
-      <!-- Formel-Box -->
-      <div id="formulaBox" class="p-3 bg-white rounded shadow-sm mb-3">
-        <div class="small text-muted mb-1">Implizite Gleichung</div>
-        <div id="formulaText" style="width:100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; font-size: 14px; line-height: 1.4;">
-          F(x,y,z) = 0
+        <div class="col-12">
+            <div class="ratio ratio-16x9">
+                <iframe id="cubicFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="cubicFrame"></iframe>
+            </div>
         </div>
-      </div>
     </div>
-
-    <!-- Renderer -->
-    <div class="col-12">
-      <div class="ratio ratio-16x9">
-        <iframe id="cubicFrame" class="w-100 h-100 border-0" allowfullscreen name="cubicFrame"></iframe>
-      </div>
-    </div>
-  </div>
 </div>
-
 <script>
 /* <![CDATA[ */
-// === Pfad zu deiner Render-Seite (GitHub Pages etc.) ===
+// === Render-Seite ===
 const cubicUrl = "https://yannick168.github.io/Bachelorarbeit/src/cubicSurface/cubicSurface.html";
 
-/* Monomiale & Layout (in exakt dieser Reihenfolge werden die 20 Koeffizienten geschickt) */
+/* Monomiale in Uniform-Reihenfolge */
 const monomials = [
   "x³","y³","z³",
   "x²y","x²z","y²z","yz²","xy²","xz²","xyz",
@@ -109,52 +114,30 @@ const defaults = {
 /* Presets */
 const PRESETS = {
   sphere: [
-    0,0,0,
-    0,0,0,0,0,0,0,
-    1,1,1,
-    0,0,0,
-    0,0,0,
-    -1
+    0,0,0,  0,0,0,0,0,0,0,  1,1,1,  0,0,0,  0,0,0,  -1
   ],
-  // Clebsch-Form (skaliert, expandierte Koeffizienten)
   clebsch: [
-    81, 81, 81,
-    -189, -189, -189, -189, -189, -189, 54,
-    -9, -9, -9,
-    126, 126, 126,
-    -9, -9, -9, 1
+    81,81,81,  -189,-189,-189,-189,-189,-189, 54,  -9,-9,-9,  126,126,126,  -9,-9,-9,  1
   ],
   cayley: [
-    0, 0, 0,
-    0, 0, 0, 0, 0, 0, 1,
-    0, 0, 0,
-    0, 0, 0,
-    0, 1, 1,
-    1
+    0,0,0,  0,0,0,0,0,0,1,  0,0,0,  0,0,0,  0,1,1,  1
   ],
   monkeySaddle: [
-    1, 0, 0,
-    0, 0, 0, 0, -3, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0, 0, -1,
-    0
+    1,0,0,  0,0,0,0,-3,0,0,  0,0,0,  0,0,0,  0,0,-1,  0
   ],
-  cylinder: [
-    1, 1, 0,
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0, 0, -1,
-    0
+  cylinder: [ 
+  0, 0, 0,                // x^3, y^3, z^3
+  0, 0, 0, 0, 0, 0, 0,    // x^2y, x^2z, y^2z, yz^2, xy^2, xz^2, xyz   (7 Stück!)
+  1, 1, 0,                // x^2, y^2, z^2
+  0, 0, 0,                
+  0, 0, 0,                
+  -1                      
   ],
   crosspropeller: [
-    0, 0, 0,
-    0, 0, 0, 0, 0, 0, 1,
-    1, 0.1, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0
+    0,0,0,  0,0,0,0,0,0,1,  1,0.1,0,  0,0,0,  0,0,0,  0
+  ],
+  custom: [
+    0,0,0,  0,0,0,0,0,0,0,  0,0,0,  0,0,0,  0,0,0,  0
   ]
 };
 
@@ -169,157 +152,141 @@ const LABEL_STYLE = "font-size:10px;font-weight:600;text-align:center;margin-bot
 const RANGE_STYLE = "width:100%;height:12px;padding:0;margin:0 0 2px 0;";
 const NUM_STYLE   = "width:100%;height:20px;font-size:11px;text-align:center;padding:1px;";
 
-/* =============== MathJax Helpers =============== */
+/* MathJax Helpers */
 const latexMono = {
   "x³":"x^{3}","y³":"y^{3}","z³":"z^{3}",
   "x²y":"x^{2}y","x²z":"x^{2}z","y²z":"y^{2}z","yz²":"y z^{2}","xy²":"x y^{2}","xz²":"x z^{2}","xyz":"x y z",
   "x²":"x^{2}","y²":"y^{2}","z²":"z^{2}",
   "xz":"x z","xy":"x y","yz":"y z",
-  "x":"x","y":"y","z":"z",
-  "1":"1"
+  "x":"x","y":"y","z":"z","1":"1"
 };
 const NEAR_ZERO = 1e-9;
-function isZero(n){ return Math.abs(n) < NEAR_ZERO; }
+const isZero = (n)=>Math.abs(n) < NEAR_ZERO;
 
-/* "de"-Parsing: akzeptiert Komma und Punkt */
+/* Komma-/Punkt-Parsing */
 function parseNum(s){
   if (typeof s !== 'string') s = String(s ?? '');
   return parseFloat(s.replace(',', '.'));
 }
 
-/* Zahl -> TeX mit Dezimal-Komma (ohne überflüssige Nullen) */
+/* Zahl -> TeX mit deutschem Komma */
 function niceNumber(n){
-  let s = Number(n).toFixed(3).replace(/\.?0+$/,''); // "1.230" -> "1.23", "2.000" -> "2"
+  let s = Number(n).toFixed(3).replace(/\.?0+$/,''); // 1.230 -> 1.23
   if (s === '-0') s = '0';
-  s = s.replace('.', '{,}'); // Dezimal-Komma in TeX
-  return s;
+  return s.replace('.', '{,}');
 }
 
-// erzeugt TeX für EINEN Term (mit Vorzeichen-Handling separat)
+/* Einzelterm zu TeX */
 function termToTeX(coeff, monoLabel){
   const abs = Math.abs(coeff);
-  const isConst = (monoLabel === "1");
-  if (isConst) return niceNumber(abs); // nur Zahl
+  if (monoLabel === "1") return niceNumber(abs);
   const mono = latexMono[monoLabel] || monoLabel;
-  if (Math.abs(abs - 1) < NEAR_ZERO) return mono; // 1·x -> x
+  if (Math.abs(abs - 1) < NEAR_ZERO) return mono;     // 1·x -> x
   return `${niceNumber(abs)}\\,${mono}`;
 }
 
-// komplette TeX-Formel erzeugen (MathJax bricht selbstständig um)
-function buildFormulaTeX(coeffs){
+/* Wie viele Terme pro Zeile? (abhängig von Boxbreite) */
+function termsPerLineForWidth(px){
+  if (px < 420) return 6;
+  if (px < 640) return 8;
+  if (px < 900) return 10;
+  if (px < 1200) return 12;
+  return 14;
+}
+
+/* Formel mit Zeilenumbrüchen per aligned-Umgebung bauen */
+function buildFormulaTeXWrapped(coeffs, termsPerLine){
   const parts = [];
   monomials.forEach((m,i) => {
     const c = Number(coeffs[i] ?? 0);
     if (isZero(c)) return;
-    const sign = (c < 0) ? "-" : "+";
-    const body = termToTeX(c, m);
-    parts.push({sign, body});
+    parts.push({ sign: c<0 ? "-" : "+", body: termToTeX(c, m) });
   });
   if (parts.length === 0) return `F(x,y,z)=0`;
-  // erstes Vorzeichen weg
-  let tex = `F(x,y,z)= `;
-  const first = parts[0];
-  tex += (first.sign === "+") ? `${first.body}` : `- ${first.body}`;
+
+  const lines = [];
+  let line = `F(x,y,z) &= `;
+  let count = 0;
+
+  line += (parts[0].sign === "+") ? `${parts[0].body}` : `- ${parts[0].body}`;
+  count = 1;
+
   for (let k=1; k<parts.length; k++){
-    tex += (parts[k].sign === "+") ? ` + ${parts[k].body}` : ` - ${parts[k].body}`;
+    if (count >= termsPerLine){
+      lines.push(line);
+      line = `&\\quad `;
+      count = 0;
+    }
+    line += (parts[k].sign === "+") ? ` + ${parts[k].body}` : ` - ${parts[k].body}`;
+    count++;
   }
-  tex += ` = 0`;
-  return tex;
+  line += ` = 0`;
+  lines.push(line);
+
+  return `\\begin{aligned} ${lines.join(' \\\\ ')} \\end{aligned}`;
 }
 
-// MathJax typesetten/neu typesetten
+/* MathJax typeset */
 function mjTypeset(el){
   if (window.MathJax && MathJax.typesetPromise) {
     MathJax.typesetPromise([el]).catch(()=>{});
   }
 }
-function mjRetypeset(){
-  const el = document.getElementById('formulaText');
-  if (window.MathJax && MathJax.typesetPromise) {
-    if (MathJax.typesetClear) MathJax.typesetClear([el]);
-    MathJax.typesetPromise([el]).catch(()=>{});
-  }
-}
 function debounce(fn, wait=150){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
 
-/* Formel updaten (mit MathJax) */
+/* Formel aktualisieren */
 function updateFormula(){
   const coeffs = currentCoeffs();
-  const tex = buildFormulaTeX(coeffs);
-  const box = document.getElementById("formulaText");
-  box.innerHTML = `\\[ ${tex} \\]`;
-  mjTypeset(box);
+  const box = document.getElementById("formulaBox");
+  const tpl = termsPerLineForWidth(box.clientWidth);
+  const tex = buildFormulaTeXWrapped(coeffs, tpl);
+  const out = document.getElementById("formulaText");
+  out.innerHTML = `\\[ ${tex} \\]`;
+  mjTypeset(out);
 }
 
-/* UI */
+/* UI bauen */
 function createSlider(mono){
   const base = Number(defaults[mono] ?? 0);
-
-  const wrap = document.createElement("div");
-  wrap.setAttribute("style", CELL_STYLE);
+  const wrap = document.createElement("div"); wrap.setAttribute("style", CELL_STYLE);
 
   const lab = document.createElement("div");
   lab.setAttribute("style", LABEL_STYLE);
-  lab.innerHTML = `\\(${latexMono[mono] || mono}\\)`; // TeX
+  lab.innerHTML = `\\(${latexMono[mono] || mono}\\)`;
 
   const num = document.createElement("input");
-  num.type = "number";
-  num.setAttribute('lang','de'); // Browser-Hint für Komma
+  num.type = "number"; num.setAttribute('lang','de');
   num.className = "form-control form-control-sm";
   num.setAttribute("style", NUM_STYLE);
-  num.step = "0.1";
-  num.value = String(base);
+  num.step = "0.1"; num.value = String(base);
 
   const rng = document.createElement("input");
-  rng.type = "range";
-  rng.className = "form-range";
+  rng.type = "range"; rng.className = "form-range";
   rng.setAttribute("style", RANGE_STYLE);
-  rng.step = "0.1";
-  rng.min = (base - 5).toString();
-  rng.max = (base + 5).toString();
-  rng.value = String(base);
+  rng.step = "0.1"; rng.min = (base - 5).toString(); rng.max = (base + 5).toString(); rng.value = String(base);
 
-  // datalist für Skala (Min, 0, Max)
   const listId = "ticks-" + mono;
   rng.setAttribute("list", listId);
-  const datalist = document.createElement("datalist");
-  datalist.id = listId;
-  [rng.min, 0, rng.max].forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v;
-    datalist.appendChild(opt);
-  });
+  const datalist = document.createElement("datalist"); datalist.id = listId;
+  [rng.min, 0, rng.max].forEach(v => { const opt = document.createElement("option"); opt.value = v; datalist.appendChild(opt); });
 
-  // Events
-  rng.addEventListener("input", () => {
-    num.value = rng.value; // Anzeige synchron
-    sendAll(); updateFormula();
-  });
+  rng.addEventListener("input", () => { num.value = rng.value; sendAll(); updateFormula(); });
   num.addEventListener("input", () => {
-    const v = parseNum(num.value); // akzeptiert "," und "."
+    const v = parseNum(num.value);
     if (isFinite(v)) {
-      rng.min = (v - 5).toFixed(1);
-      rng.max = (v + 5).toFixed(1);
-      rng.value = String(v);
-      datalist.innerHTML = "";
-      [rng.min, 0, rng.max].forEach(val => {
-        const opt = document.createElement("option");
-        opt.value = val;
-        datalist.appendChild(opt);
-      });
+      rng.min = (v - 5).toFixed(1); rng.max = (v + 5).toFixed(1); rng.value = String(v);
+      datalist.innerHTML = ""; [rng.min, 0, rng.max].forEach(val => { const opt = document.createElement("option"); opt.value = val; datalist.appendChild(opt); });
       sendAll(); updateFormula();
     }
   });
 
-  // Reihenfolge: Label → Number → Slider + datalist
   wrap.appendChild(lab);
   wrap.appendChild(num);
   wrap.appendChild(rng);
   wrap.appendChild(datalist);
 
   const idx = monomials.indexOf(mono);
-  inputs[idx] = num;
-  sliders[idx] = rng;
+  inputs[idx] = num; sliders[idx] = rng;
   return wrap;
 }
 
@@ -327,23 +294,21 @@ function buildSliders(){
   const container = document.getElementById("sliderContainer");
   container.innerHTML = "";
   rows.forEach(rowList => {
-    const row = document.createElement("div");
-    row.setAttribute("style", ROW_STYLE);
+    const row = document.createElement("div"); row.setAttribute("style", ROW_STYLE);
     rowList.forEach(m => row.appendChild(createSlider(m)));
     container.appendChild(row);
   });
-  // einmalig Slider-Labels typesetten
   mjTypeset(container);
 }
 
 function currentCoeffs(){
   return monomials.map((m, i) => {
-    const v = parseNum(inputs[i]?.value); // parseNum statt parseFloat
+    const v = parseNum(inputs[i]?.value);
     return isFinite(v) ? v : 0;
   });
 }
 
-/* Messaging zum Renderer */
+/* Messaging */
 function sendAll(){
   const frame = document.getElementById("cubicFrame");
   if (!frame || !frame.contentWindow) return;
@@ -352,16 +317,16 @@ function sendAll(){
   frame.contentWindow.postMessage({ type: "coeffs", coeffs }, "*");
 
   const viewMode = parseInt(document.getElementById("viewMode").value, 10);
-  const showBox = document.getElementById("showBox").checked; // NEU
+  const showBox = document.getElementById("showBox").checked;
   frame.contentWindow.postMessage({ type: "controls", viewMode, showBox }, "*");
 }
 
-function resetSlidersToCenter(span = 5) {
+function resetSlidersToCenter(span = 5){
   for (let i = 0; i < monomials.length; i++) {
-    const v = parseNum(inputs[i].value) || 0;     // aktuelle Zahl im Feld = Zentrum
+    const v = parseNum(inputs[i].value) || 0;
     sliders[i].min = (v - span).toFixed(1);
     sliders[i].max = (v + span).toFixed(1);
-    sliders[i].value = String(v);                 // Thumb in die Mitte
+    sliders[i].value = String(v);
     const listId = "ticks-" + monomials[i];
     const dl = sliders[i].list || document.getElementById(listId);
     if (dl) {
@@ -377,12 +342,12 @@ function resetSlidersToCenter(span = 5) {
 
 function applyPreset(key){
   const coeffs = PRESETS[key];
-  if (!Array.isArray(coeffs)) return; // falls "custom" o.ä.
+  if (!Array.isArray(coeffs)) return;
   for (let i = 0; i < monomials.length; i++){
     const v = Number(coeffs[i] ?? 0);
-    inputs[i].value = String(v);    // Zahlenfeld = Preset
+    inputs[i].value = String(v);
   }
-  resetSlidersToCenter(5);          // Slider an neue Mitte (Preset) anpassen
+  resetSlidersToCenter(5);
 }
 
 /* Init */
@@ -390,25 +355,22 @@ const frame = document.getElementById("cubicFrame");
 frame.src = cubicUrl + (cubicUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
 
 buildSliders();
-
-// initial: aktuelles Surface-Preset anwenden
 applyPreset(document.getElementById("surfaceMode").value);
 sendAll();
 updateFormula();
 
-// Events
+/* Events */
 document.getElementById("viewMode").addEventListener("change", sendAll);
 document.getElementById("surfaceMode").addEventListener("change", (e) => {
   applyPreset(e.target.value);
   sendAll();
   updateFormula();
 });
-document.getElementById("showBox").addEventListener("change", sendAll); // NEU
+document.getElementById("showBox").addEventListener("change", sendAll);
 
 frame.addEventListener("load", () => setTimeout(() => { sendAll(); updateFormula(); }, 150));
 window.addEventListener("message", (e) => { if (e.data && e.data.type === "ready") { sendAll(); updateFormula(); }});
 
-// bei Fenstergrößenänderung dynamisch neu umbrechen
-window.addEventListener('resize', debounce(mjRetypeset, 150));
+window.addEventListener('resize', debounce(updateFormula, 150));
 /* ]]> */
 </script>
