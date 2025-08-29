@@ -17,6 +17,7 @@ export default defineConfig({
         hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
         surfaceEvolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
         cubicSurface: resolve(__dirname, 'src/cubicSurface/cubicSurface.html'),
+        cubicSurfaceTest: resolve(__dirname, 'src/cubicSurfaceTest/cubicSurface.html'),
         surfaceEvolverCatenoid: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverCatenoid.html'),
         surfaceEvolverHNCusp: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverHNCusp.html'),
       }

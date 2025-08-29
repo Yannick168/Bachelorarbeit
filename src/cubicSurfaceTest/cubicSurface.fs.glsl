@@ -98,93 +98,17 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
 }
 
 
-// Clebsch's Surface
-float clebschIntersect(vec3 ro, vec3 rd) {
-
-  float coeff[4];
-  vec3 res;
-  float t = 1e20f;
-
-  coeff[3] = 81.0f*rd.x*rd.x*rd.x - 189.0f*rd.x*rd.x*rd.y - 189.0f*rd.x*rd.x*rd.z - 189.0f*rd.x*rd.y*rd.y + 54.0f*rd.x*rd.y*rd.z 
-            - 189.0f*rd.x*rd.z*rd.z + 81.0f*rd.y*rd.y*rd.y - 189.0f*rd.y*rd.y*rd.z - 189.0f*rd.y*rd.z*rd.z + 81.0f*rd.z*rd.z*rd.z;
-  coeff[2] = 243.0f*ro.x*rd.x*rd.x - 378.0f*ro.x*rd.x*rd.y - 378.0f*ro.x*rd.x*rd.z - 189.0f*ro.x*rd.y*rd.y + 54.0f*ro.x*rd.y*rd.z 
-            - 189.0f*ro.x*rd.z*rd.z - 189.0f*ro.y*rd.x*rd.x - 378.0f*ro.y*rd.x*rd.y + 54.0f*ro.y*rd.x*rd.z + 243.0f*ro.y*rd.y*rd.y 
-            - 378.0f*ro.y*rd.y*rd.z - 189.0f*ro.y*rd.z*rd.z - 189.0f*ro.z*rd.x*rd.x + 54.0f*ro.z*rd.x*rd.y - 378.0f*ro.z*rd.x*rd.z 
-            - 189.0f*ro.z*rd.y*rd.y - 378.0f*ro.z*rd.y*rd.z + 243.0f*ro.z*rd.z*rd.z - 9.0f*rd.x*rd.x + 126.0f*rd.x*rd.y + 126.0f*rd.x*rd.z 
-            - 9.0f*rd.y*rd.y + 126.0f*rd.y*rd.z - 9.0f*rd.z*rd.z;
-  coeff[1] = 243.0f*ro.x*ro.x*rd.x - 189.0f*ro.x*ro.x*rd.y - 189.0f*ro.x*ro.x*rd.z - 378.0f*ro.x*ro.y*rd.x - 378.0f*ro.x*ro.y*rd.y 
-             + 54.0f*ro.x*ro.y*rd.z - 378.0f*ro.x*ro.z*rd.x + 54.0f*ro.x*ro.z*rd.y - 378.0f*ro.x*ro.z*rd.z - 18.0f*ro.x*rd.x + 126.0f*ro.x*rd.y 
-             + 126.0f*ro.x*rd.z - 189.0f*ro.y*ro.y*rd.x + 243.0f*ro.y*ro.y*rd.y - 189.0f*ro.y*ro.y*rd.z + 54.0f*ro.y*ro.z*rd.x 
-             - 378.0f*ro.y*ro.z*rd.y - 378.0f*ro.y*ro.z*rd.z + 126.0f*ro.y*rd.x - 18.0f*ro.y*rd.y + 126.0f*ro.y*rd.z - 189.0f*ro.z*ro.z*rd.x 
-             - 189.0f*ro.z*ro.z*rd.y + 243.0f*ro.z*ro.z*rd.z + 126.0f*ro.z*rd.x + 126.0f*ro.z*rd.y - 18.0f*ro.z*rd.z - 9.0f*rd.x - 9.0f*rd.y 
-             - 9.0f*rd.z;
-  coeff[0] = 81.0f*ro.x*ro.x*ro.x - 189.0f*ro.x*ro.x*ro.y - 189.0f*ro.x*ro.x*ro.z - 9.0f*ro.x*ro.x - 189.0f*ro.x*ro.y*ro.y + 54.0f*ro.x*ro.y*ro.z
-             + 126.0f*ro.x*ro.y - 189.0f*ro.x*ro.z*ro.z + 126.0f*ro.x*ro.z - 9.0f*ro.x + 81.0f*ro.y*ro.y*ro.y - 189.0f*ro.y*ro.y*ro.z 
-             - 9.0f*ro.y*ro.y - 189.0f*ro.y*ro.z*ro.z + 126.0f*ro.y*ro.z - 9.0f*ro.y + 81.0f*ro.z*ro.z*ro.z - 9.0f*ro.z*ro.z - 9.0f*ro.z + 1.0f;
-  
-  int n = cubic(coeff[3], coeff[2], coeff[1], coeff[0], res);
-  for(int i = 0; i < n; i++) {
-    if (res[i] < 0.0f)
-      continue;
-    if (res[i] < t) {
-      vec3 p = ro + res[i] * rd;
-      if (dot(p,p) > 100.0f)
-        continue;
-      t = res[i];
-    }
-  }
-
-  if(t == 1e20f)
-    return (-1.0f);
-  return (t);
-}
-
-
-float clebschLineIntersect(vec3 ro, vec3 rd) {
-  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
-  vec3 b = vec3(1.0f,-1.0f,0.0f);
-  float coeff[3];
-  float rad = 0.01f;
-
-  vec3 bxrd = cross(b,rd);
-  vec3 bxroa = cross(b,ro-a);
-  coeff[2] = dot(bxrd,bxrd);
-  coeff[1] = 2.0f*dot(bxrd,bxroa);
-  coeff[0] = dot(bxroa,bxroa)-dot(b,b)*rad*rad;
-
-  vec2 res;
-  int s = quadratic(coeff[2],coeff[1],coeff[0],res);
-  if (s == 0) return(-1.0f);
-  if (res[0] < 0.0f && res[1] < 0.0f) return(-1.0f);
-  float t = min(res[0],res[1]);
-  vec3 p = ro + t * rd;
-  if (dot(p,p) > 1.0f) return(-1.0f);
-  return(t);
-}
-
-vec3 clebschNormal(vec3 p) {
-  vec3 n;
-
-  n.x = 243.0f*p.x*p.x - 378.0f*p.x*(p.y + p.z) - 18.0f*p.x - 189.0f*p.y*p.y + 54.0f*p.y*p.z + 126.0f*p.y - 189.0f*p.z*p.z + 126.0f*p.z - 9.0f;
-  n.y = -189.0f*p.x*p.x + 54.0f*p.x*p.z + 126.0f*p.x + 243.0f*p.y*p.y - 378.0f*p.y*(p.x + p.z) - 18.0f*p.y - 189.0f*p.z*p.z + 126.0f*p.z - 9.0f;
-  n.z = -189.0f*p.x*p.x + 54.0f*p.x*p.y + 126.0f*p.x - 189.0f*p.y*p.y + 126.0f*p.y + 243.0f*p.z*p.z - 378.0f*p.z*(p.x + p.y) - 18.0f*p.z - 9.0f;
-  return(normalize(n));
-}
-
-
 const float EPS = 1e-4;
 
-
-// Robuster Ray–AABB-Test (Slab-Methode) für [-h, h]^3
-bool rayAABB(vec3 ro, vec3 rd, float h, out float tNear, out float tFar) {
+bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
     vec3 invD = 1.0 / rd;
     vec3 t0 = (vec3(-h) - ro) * invD;
     vec3 t1 = (vec3( h) - ro) * invD;
     vec3 tmin = min(t0, t1);
     vec3 tmax = max(t0, t1);
-    tNear = max(max(tmin.x, tmin.y), tmin.z);
-    tFar  = min(min(tmax.x, tmax.y), tmax.z);
-    return tFar > max(tNear, 0.0);
+    tEnter = max(max(tmin.x, tmin.y), tmin.z);
+    tExit  = min(min(tmax.x, tmax.y), tmax.z);
+    return tExit > max(tEnter, 0.0);
 }
 
   
@@ -219,13 +143,6 @@ vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
 }
 
 
-vec3 clebschLineNormal(vec3 p) {
-  vec3 a = vec3(0.0f,0.0f,-1.0/3.0f);
-  vec3 b = vec3(1.0f,-1.0f,0.0f);
-  vec3 n = cross(b,cross(b,p-a));
-  return(normalize(n));
-}
-
 
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c300 = coeffs[0];
@@ -249,15 +166,15 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c001 = coeffs[18];
   float c000 = coeffs[19];
 
-  float coeff[4];
+  float a[4];
 
-  coeff[3] =
+  a[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
     c030*pow(rd.y,3.0) + c102*rd.x*pow(rd.z,2.0) + c111*rd.x*rd.y*rd.z +
     c120*rd.x*pow(rd.y,2.0) + c201*pow(rd.x,2.0)*rd.z + c210*pow(rd.x,2.0)*rd.y +
     c300*pow(rd.x,3.0);
 
-  coeff[2] =
+  a[2] =
     ro.x*c102*pow(rd.z,2.0) + ro.x*c111*rd.y*rd.z + ro.x*c120*pow(rd.y,2.0) +
     2.0*ro.x*c201*rd.x*rd.z + 2.0*ro.x*c210*rd.x*rd.y + 3.0*ro.x*c300*pow(rd.x,2.0) +
     ro.y*c012*pow(rd.z,2.0) + 2.0*ro.y*c021*rd.y*rd.z + 3.0*ro.y*c030*pow(rd.y,2.0) +
@@ -267,7 +184,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     c002*pow(rd.z,2.0) + c011*rd.y*rd.z + c020*pow(rd.y,2.0) +
     c101*rd.x*rd.z + c110*rd.x*rd.y + c200*pow(rd.x,2.0);
 
-  coeff[1] =
+  a[1] =
     pow(ro.x,2.0)*c201*rd.z + pow(ro.x,2.0)*c210*rd.y + 3.0*pow(ro.x,2.0)*c300*rd.x +
     ro.x*ro.y*c111*rd.z + 2.0*ro.x*ro.y*c120*rd.y + 2.0*ro.x*ro.y*c210*rd.x +
     2.0*ro.x*ro.z*c102*rd.z + ro.x*ro.z*c111*rd.y + 2.0*ro.x*ro.z*c201*rd.x +
@@ -279,7 +196,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     2.0*ro.z*c002*rd.z + ro.z*c011*rd.y + ro.z*c101*rd.x +
     c001*rd.z + c010*rd.y + c100*rd.x;
 
-  coeff[0] =
+  a[0] =
     pow(ro.x,3.0)*c300 + pow(ro.x,2.0)*ro.y*c210 + pow(ro.x,2.0)*ro.z*c201 + pow(ro.x,2.0)*c200 +
     ro.x*pow(ro.y,2.0)*c120 + ro.x*ro.y*ro.z*c111 + ro.x*ro.y*c110 +
     ro.x*pow(ro.z,2.0)*c102 + ro.x*ro.z*c101 + ro.x*c100 +
@@ -288,19 +205,19 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   
-  float tNear, tFar;
-  if (!rayAABB(ro, rd, uHalf, tNear, tFar)) return -1.0;
-  tNear = max(tNear, EPS);
+  float tEnter, tExit;
+  if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
+  tEnter = max(tEnter, EPS);
 
   vec3 res;
   float t = 1e20f;
-  int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0], res);
+  int n = cubic(a[3], a[2], a[1], a[0], res);
   
   // Kandidaten filtern auf Intervall
   for (int i = 0; i < n; ++i) {
     float ti = res[i];
     if (ti < 0.0)      continue;
-    if (ti < tNear || ti > tFar) continue;
+    if (ti < tEnter || ti > tExit) continue;
     t = min(t, ti);
   }
 
@@ -358,35 +275,16 @@ void main() {
   rd = normalize(rd);
   ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection
   
-  vec4 col = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+  vec4 col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
   vec3 p, n;
   float lambda;
 
-  switch(uSurface) {
-    case 1:
-      lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-      if (lambda < 0.0f)
-        discard;
-      p = ro + lambda * rd;
-      n = cubicSurfaceNormal(p, uCoeffs);
-      break;
-
-    case 2:
-      lambda = clebschIntersect(ro, rd);
-      if (lambda < 0.0f)
-        discard;
-      p = ro + lambda * rd;
-      n = clebschNormal(p);
-
-      float lambdro = clebschLineIntersect(ro, rd);
-      if (lambdro > 0.0f && lambdro < lambda) {
-        p = ro + lambdro * rd;
-        n = clebschLineNormal(p);
-        col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-      }
-      break;
-  }
+  lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
+  if (lambda < 0.0f)
+    discard;
+  p = ro + lambda * rd;
+  n = cubicSurfaceNormal(p, uCoeffs);
 
   // Headlight-/View-Shading
   float shade = abs(dot(normalize(rd), normalize(n)));

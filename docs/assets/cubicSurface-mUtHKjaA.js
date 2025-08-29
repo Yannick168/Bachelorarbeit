@@ -127,7 +127,6 @@ bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {\r
     return tExit > max(tEnter, 0.0);\r
 }\r
 \r
-\r
   \r
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {\r
   float c300 = coeffs[0];\r
