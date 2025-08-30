@@ -3,22 +3,24 @@ precision highp float;
 
 in vec3 vUV;
 
-uniform mat4 uModelInverse;
-uniform int uOrthographic;
-uniform int uSurface;
-uniform float uCoeffs[20];
+uniform mat4  uModelInverse;
+uniform int   uOrthographic;
+uniform int   uSurface;          // bleibt vorhanden, falls genutzt
+uniform float uCoeffs[20];       // deine Kubik-Flächen-Koeffizienten
 
-uniform bool  uShowAxes;        // <— NEU: Achsen anzeigen?
-uniform bool  uShowBox;         // (bestehend)
-uniform float uHalf;            // Würfel-Halbe
-uniform float uEdgeThickness;   // Linien-/Kantenstärke in Objektraum-Einheiten
+uniform bool  uShowAxes;         // <<< NEU: Achsen an/aus
+uniform bool  uShowBox;          // (bestehend) Box-Kanten zeigen
+uniform float uHalf;             // halbe Würfelkantenlänge
+uniform float uEdgeThickness;    // Kanten-/Linienstärke in Objekt-Einheiten
 
+layout(location=0) out vec4 fColor;
 
-
- 
+/* =========================================================
+   Bestehende Hilfsfunktionen (unverändert gelassen)
+   ========================================================= */
 
 float sgn(float x) {
-  return x < 0.0f ? -1.0f : 1.0f; // Return 1 for x == 0
+  return x < 0.0f ? -1.0f : 1.0f;
 }
 
 int quadratic(float A, float B, float C, out vec2 res) {
@@ -58,7 +60,6 @@ void eval(
 }
 
 // Solve: Ax^3 + Bx^2 + Cx + D == 0
-// Find one real root, then reduce to quadratic.
 int cubic(float A, float B, float C, float D, out vec3 res) {
   float X, b1, c2;
   if (A == 0.0f) {
@@ -99,21 +100,19 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
   return 1 + quadratic(A, b1, c2, res.yz);
 }
 
-
 const float EPS = 1e-4;
 
 bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
-    vec3 invD = 1.0 / rd;
-    vec3 t0 = (vec3(-h) - ro) * invD;
-    vec3 t1 = (vec3( h) - ro) * invD;
-    vec3 tmin = min(t0, t1);
-    vec3 tmax = max(t0, t1);
-    tEnter = max(max(tmin.x, tmin.y), tmin.z);
-    tExit  = min(min(tmax.x, tmax.y), tmax.z);
-    return tExit > max(tEnter, 0.0);
+  vec3 invD = 1.0 / rd;
+  vec3 t0 = (vec3(-h) - ro) * invD;
+  vec3 t1 = (vec3( h) - ro) * invD;
+  vec3 tmin = min(t0, t1);
+  vec3 tmax = max(t0, t1);
+  tEnter = max(max(tmin.x, tmin.y), tmin.z);
+  tExit  = min(min(tmax.x, tmax.y), tmax.z);
+  return tExit > max(tEnter, 0.0);
 }
 
-  
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c300 = coeffs[0];
   float c030 = coeffs[1];
@@ -141,10 +140,8 @@ vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   n.y = c010 + c011*p.z + c012*pow(p.z, 2.0) + 2.0*c020*p.y + 2.0*c021*p.y*p.z + 3.0*c030*pow(p.y, 2.0) + c110*p.x + c111*p.x*p.z + 2.0*c120*p.x*p.y + c210*pow(p.x, 2.0);
   n.z = c001 + 2.0*c002*p.z + 3.0*c003*pow(p.z, 2.0) + c011*p.y + 2.0*c012*p.y*p.z + c021*pow(p.y, 2.0) + c101*p.x + 2.0*c102*p.x*p.z + c111*p.x*p.y + c201*pow(p.x, 2.0);
 
-  return(normalize(n));
+  return normalize(n);
 }
-
-
 
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c300 = coeffs[0];
@@ -206,7 +203,6 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     ro.y*pow(ro.z,2.0)*c012 + ro.y*ro.z*c011 + ro.y*c010 +
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
-  
   float tEnter, tExit;
   if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
   tEnter = max(tEnter, EPS);
@@ -214,109 +210,162 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   vec3 res;
   float t = 1e20f;
   int n = cubic(a[3], a[2], a[1], a[0], res);
-  
-  // Kandidaten filtern auf Intervall
+
   for (int i = 0; i < n; ++i) {
     float ti = res[i];
-    if (ti < 0.0)      continue;
+    if (ti < 0.0)            continue;
     if (ti < tEnter || ti > tExit) continue;
     t = min(t, ti);
   }
 
-  if(t == 1e20f)
-    return (-1.0f);
-  return (t);
+  if (t == 1e20f) return -1.0f;
+  return t;
 }
 
-
-vec3 axisColorInsideCube(vec3 P, float halfSize, float thickness){
-    // Nähe zur X-Achse: (y,z) nahe 0 und |x| innerhalb des Würfels
-    if (abs(P.x) <= halfSize && length(P.yz) < thickness) return vec3(1.0, 0.0, 0.0); // X rot
-    // Nähe zur Y-Achse
-    if (abs(P.y) <= halfSize && length(P.xz) < thickness) return vec3(0.0, 1.0, 0.0); // Y grün
-    // Nähe zur Z-Achse
-    if (abs(P.z) <= halfSize && length(P.xy) < thickness) return vec3(0.0, 0.0, 1.0); // Z blau
-    return vec3(0.0);
-}
+/* =========================================================
+   Box-Kanten (bestehende Darstellung)
+   ========================================================= */
 
 float edgeDistance(vec3 p, float r) {
-  // Distanz zu den drei Paaren |x|=r, |y|=r, |z|=r
-  vec3 d = abs(abs(p) - r);      // d.x ~ Distanz zu x=±r, etc.
-
-  // „Beide klein“ ~ Nähe zur Kante
+  vec3 d = abs(abs(p) - r);
   float dXY = max(d.x, d.y);
   float dXZ = max(d.x, d.z);
   float dYZ = max(d.y, d.z);
 
-  // Nur werten, wenn die dritte Koordinate innerhalb ist (mit kleiner Toleranz)
   float t  = r + uEdgeThickness;
   float inX = step(abs(p.x), t);
   float inY = step(abs(p.y), t);
   float inZ = step(abs(p.z), t);
 
   float BIG = 1e3;
-  float eXY = mix(BIG, dXY, inZ); // Kanten parallel Z
-  float eXZ = mix(BIG, dXZ, inY); // Kanten parallel Y
-  float eYZ = mix(BIG, dYZ, inX); // Kanten parallel X
+  float eXY = mix(BIG, dXY, inZ);
+  float eXZ = mix(BIG, dXZ, inY);
+  float eYZ = mix(BIG, dYZ, inX);
 
   return min(min(eXY, eXZ), eYZ);
 }
 
-layout(location=0) out vec4 fColor;
+/* =========================================================
+   NEU: Achsen-Koeffizienten als Quadriken in 20er-Cubic-Array
+   Index-Layout (aus deinem Code):
+   [ c300,c030,c003,c210,c201,c021,c012,c120,c102,c111,
+     c200,c020,c002,c101,c110,c011,c100,c010,c001,c000 ]
+   ========================================================= */
 
+// alle 20 Einträge auf 0
+void zeroCoeffs(out float c[20]) {
+  for (int i=0;i<20;i++) c[i] = 0.0;
+}
 
+// X-Achse: y^2 + z^2 - r^2 = 0  (unabhängig von x)
+void axisCoeffsX(float r, out float c[20]) {
+  zeroCoeffs(c);
+  c[11] = 1.0;        // c020 (y^2)
+  c[12] = 1.0;        // c002 (z^2)
+  c[19] = -r*r;       // c000 (Konstante)
+}
 
+// Y-Achse: x^2 + z^2 - r^2 = 0
+void axisCoeffsY(float r, out float c[20]) {
+  zeroCoeffs(c);
+  c[10] = 1.0;        // c200 (x^2)
+  c[12] = 1.0;        // c002 (z^2)
+  c[19] = -r*r;
+}
 
+// Z-Achse: x^2 + y^2 - r^2 = 0
+void axisCoeffsZ(float r, out float c[20]) {
+  zeroCoeffs(c);
+  c[10] = 1.0;        // c200 (x^2)
+  c[11] = 1.0;        // c020 (y^2)
+  c[19] = -r*r;
+}
+
+void copyCoeffs(in float src[20], out float dst[20]) {
+  for (int i=0;i<20;i++) dst[i] = src[i];
+}
+
+/* =========================================================
+   main
+   ========================================================= */
 void main() {
+
+  // Box-Kanten (falls aktiv) — früher Early-Return
   if (uShowBox) {
-    float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante
-    float aa = fwidth(d);                           // Anti-Aliasing
+    float d  = edgeDistance(vUV, uHalf);
+    float aa = fwidth(d);
     float m  = 1.0 - smoothstep(uEdgeThickness - aa,
                                 uEdgeThickness + aa, d);
     if (m > 0.0) {
-      // reine Kante: direkt ausgeben und fertig
-      fColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);       // Kantenfarbe
+      fColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
       return;
     }
   }
 
-  // Ray Setup (wie gehabt)
+  // Ray
   vec3 ro = vUV;
   vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz
                                  : vUV - uModelInverse[3].xyz;
   rd = normalize(rd);
-  ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection
+  ro += 1e-4 * rd;
 
-  // Grundfarbe (du kannst das wie gehabt variieren)
-  vec4 col = vec4(1.0, 0.0, 0.0, 1.0);
+  // 1) Schnitt mit deiner (aktuellen) Kubikfläche
+  float tCubic = cubicSurfaceIntersect(ro, rd, uCoeffs);
 
-  vec3 p, n;
-  float lambda;
+  // 2) Achsen als Quadriken in 20er-Array kodieren und mit
+  //    derselben Intersect-Funktion schneiden
+  float radius = max(uEdgeThickness, 0.02);
+  float tX = -1.0, tY = -1.0, tZ = -1.0;
 
-  // Schnitt mit F(x,y,z)=0 suchen
-  lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-  if (lambda < 0.0)
-    discard;
-
-  // Trefferpunkt + Normale
-  p = ro + lambda * rd;
-  n = cubicSurfaceNormal(p, uCoeffs);
-
-  // Headlight/View-Shading (wie gehabt)
-  float shade = abs(dot(normalize(rd), normalize(n)));
-
-  // Basisfarbe (vor Axen-Overlay)
-  vec3 baseRGB = col.rgb * shade;
-
-  // ======= NEU: Achsen-Overlay innerhalb des Würfels =======
+  float cx[20]; float cy[20]; float cz[20];
   if (uShowAxes) {
-    // Nutze deine EdgeThickness (mit Mindestwert), so wirken Achsen visuell konsistent
-    float thickness = max(uEdgeThickness, 0.02);
-    vec3 axis = axisColorInsideCube(p, uHalf, thickness);
-    if (axis != vec3(0.0)) {
-      baseRGB = axis; // hartes Overlay; alternativ könntest du weich einblenden
-    }
+    axisCoeffsX(radius, cx);
+    axisCoeffsY(radius, cy);
+    axisCoeffsZ(radius, cz);
+    tX = cubicSurfaceIntersect(ro, rd, cx);
+    tY = cubicSurfaceIntersect(ro, rd, cy);
+    tZ = cubicSurfaceIntersect(ro, rd, cz);
   }
 
-  fColor = vec4(baseRGB, col.a);
+  // 3) Nähesten Treffer wählen
+  bool haveCubic = (tCubic >= 0.0);
+  bool haveX = (tX >= 0.0);
+  bool haveY = (tY >= 0.0);
+  bool haveZ = (tZ >= 0.0);
+
+  if (!haveCubic && !haveX && !haveY && !haveZ) {
+    discard;
+  }
+
+  float tMin = 1e20;
+  int   which = -1; // 0=X,1=Y,2=Z, 3=Cubic
+
+  if (haveX && tX < tMin) { tMin = tX; which = 0; }
+  if (haveY && tY < tMin) { tMin = tY; which = 1; }
+  if (haveZ && tZ < tMin) { tMin = tZ; which = 2; }
+  if (haveCubic && tCubic < tMin) { tMin = tCubic; which = 3; }
+
+  vec3 p = ro + tMin * rd;
+  vec3 n;
+  vec3 rgb;
+
+  if (which == 0) {
+    n   = normalize(cubicSurfaceNormal(p, cx));
+    rgb = vec3(1.0, 0.0, 0.0);
+  } else if (which == 1) {
+    n   = normalize(cubicSurfaceNormal(p, cy));
+    rgb = vec3(0.0, 1.0, 0.0);
+  } else if (which == 2) {
+    n   = normalize(cubicSurfaceNormal(p, cz));
+    rgb = vec3(0.0, 0.0, 1.0);
+  } else { // 3: deine Kubikfläche
+    n   = normalize(cubicSurfaceNormal(p, uCoeffs));
+    rgb = vec3(1.0, 0.1, 0.1); // deine Base-Farbe
+  }
+
+  // Headlight-Shading
+  float shade = abs(dot(rd, n));
+  rgb *= max(shade, 0.0);
+
+  fColor = vec4(rgb, 1.0);
 }
