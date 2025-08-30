@@ -8,13 +8,14 @@ uniform int uOrthographic;
 uniform int uSurface;
 uniform float uCoeffs[20];
 
-uniform bool uShowAxes;
-uniform bool  uShowBox;          // per TS toggeln
-uniform float uHalf;             // = r (z.B. 3.0)
-uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)
+uniform bool  uShowAxes;        // <— NEU: Achsen anzeigen?
+uniform bool  uShowBox;         // (bestehend)
+uniform float uHalf;            // Würfel-Halbe
+uniform float uEdgeThickness;   // Linien-/Kantenstärke in Objektraum-Einheiten
 
 
-out vec4 fColor;
+
+ 
 
 float sgn(float x) {
   return x < 0.0f ? -1.0f : 1.0f; // Return 1 for x == 0
@@ -228,7 +229,15 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
 }
 
 
-
+vec3 axisColorInsideCube(vec3 P, float halfSize, float thickness){
+    // Nähe zur X-Achse: (y,z) nahe 0 und |x| innerhalb des Würfels
+    if (abs(P.x) <= halfSize && length(P.yz) < thickness) return vec3(1.0, 0.0, 0.0); // X rot
+    // Nähe zur Y-Achse
+    if (abs(P.y) <= halfSize && length(P.xz) < thickness) return vec3(0.0, 1.0, 0.0); // Y grün
+    // Nähe zur Z-Achse
+    if (abs(P.z) <= halfSize && length(P.xy) < thickness) return vec3(0.0, 0.0, 1.0); // Z blau
+    return vec3(0.0);
+}
 
 float edgeDistance(vec3 p, float r) {
   // Distanz zu den drei Paaren |x|=r, |y|=r, |z|=r
@@ -253,34 +262,12 @@ float edgeDistance(vec3 p, float r) {
   return min(min(eXY, eXZ), eYZ);
 }
 
+layout(location=0) out vec4 fColor;
 
-void main() {
-  // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====
-  // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.
-  if (uShowAxes) {
-      // Position im Welt-/Objektraum (abhängig von deinem Setup)
-      vec3 p = fragPos;  // oder die Weltposition aus dem Raymarching
-      
-      float thickness = 0.02; // Achsenradius
-      
-      // Abstände zu den Achsen
-      float dx = length(p.yz); // Abstand von YZ-Ebene => X-Achse
-      float dy = length(p.xz); // Abstand von XZ-Ebene => Y-Achse
-      float dz = length(p.xy); // Abstand von XY-Ebene => Z-Achse
-
-      vec3 axisColor = vec3(0.0);
-
-      if (dx < thickness) axisColor = vec3(1.0, 0.0, 0.0); // X-Achse rot
-      if (dy < thickness) axisColor = vec3(0.0, 1.0, 0.0); // Y-Achse grün
-      if (dz < thickness) axisColor = vec3(0.0, 0.0, 1.0); // Z-Achse blau
-
-      if (axisColor != vec3(0.0)) {
-          fragColor = vec4(axisColor, 1.0);
-      }
-  }
 
 
 
+void main() {
   if (uShowBox) {
     float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante
     float aa = fwidth(d);                           // Anti-Aliasing
@@ -293,25 +280,43 @@ void main() {
     }
   }
 
-  // ===== Dein bisheriger Ray-Setup =====
+  // Ray Setup (wie gehabt)
   vec3 ro = vUV;
   vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz
                                  : vUV - uModelInverse[3].xyz;
   rd = normalize(rd);
   ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection
-  
-  vec4 col = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+  // Grundfarbe (du kannst das wie gehabt variieren)
+  vec4 col = vec4(1.0, 0.0, 0.0, 1.0);
 
   vec3 p, n;
   float lambda;
 
+  // Schnitt mit F(x,y,z)=0 suchen
   lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);
-  if (lambda < 0.0f)
+  if (lambda < 0.0)
     discard;
+
+  // Trefferpunkt + Normale
   p = ro + lambda * rd;
   n = cubicSurfaceNormal(p, uCoeffs);
 
-  // Headlight-/View-Shading
+  // Headlight/View-Shading (wie gehabt)
   float shade = abs(dot(normalize(rd), normalize(n)));
-  fColor = vec4(col.rgb * shade, col.a);
+
+  // Basisfarbe (vor Axen-Overlay)
+  vec3 baseRGB = col.rgb * shade;
+
+  // ======= NEU: Achsen-Overlay innerhalb des Würfels =======
+  if (uShowAxes) {
+    // Nutze deine EdgeThickness (mit Mindestwert), so wirken Achsen visuell konsistent
+    float thickness = max(uEdgeThickness, 0.02);
+    vec3 axis = axisColorInsideCube(p, uHalf, thickness);
+    if (axis != vec3(0.0)) {
+      baseRGB = axis; // hartes Overlay; alternativ könntest du weich einblenden
+    }
+  }
+
+  fColor = vec4(baseRGB, col.a);
 }

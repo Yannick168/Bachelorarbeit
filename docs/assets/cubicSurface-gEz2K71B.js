@@ -1,4 +1,4 @@
-import"./modulepreload-polyfill-B5Qt9EMX.js";import{O as E}from"./OrbitControls-C5UR_-od.js";import{P as h,O as y}from"./three.module-Dzl-6arX.js";import{c as u,s as g,b as S,m as B,i as C}from"./mat4-DI7TqCbi.js";const M=`#version 300 es\r
+import"./modulepreload-polyfill-B5Qt9EMX.js";import{O as E}from"./OrbitControls-C5UR_-od.js";import{P as w,O as y}from"./three.module-Dzl-6arX.js";import{c as u,s as S,b as B,m as g,i as C}from"./mat4-DI7TqCbi.js";const M=`#version 300 es\r
 precision highp float;\r
 \r
 layout(location=0) in vec3 aPosition;\r
@@ -24,13 +24,14 @@ uniform int uOrthographic;\r
 uniform int uSurface;\r
 uniform float uCoeffs[20];\r
 \r
-uniform bool uShowAxes;\r
-uniform bool  uShowBox;          // per TS toggeln\r
-uniform float uHalf;             // = r (z.B. 3.0)\r
-uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)\r
+uniform bool  uShowAxes;        // <— NEU: Achsen anzeigen?\r
+uniform bool  uShowBox;         // (bestehend)\r
+uniform float uHalf;            // Würfel-Halbe\r
+uniform float uEdgeThickness;   // Linien-/Kantenstärke in Objektraum-Einheiten\r
 \r
 \r
-out vec4 fColor;\r
+\r
+ \r
 \r
 float sgn(float x) {\r
   return x < 0.0f ? -1.0f : 1.0f; // Return 1 for x == 0\r
@@ -244,7 +245,15 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {\r
 }\r
 \r
 \r
-\r
+vec3 axisColorInsideCube(vec3 P, float halfSize, float thickness){\r
+    // Nähe zur X-Achse: (y,z) nahe 0 und |x| innerhalb des Würfels\r
+    if (abs(P.x) <= halfSize && length(P.yz) < thickness) return vec3(1.0, 0.0, 0.0); // X rot\r
+    // Nähe zur Y-Achse\r
+    if (abs(P.y) <= halfSize && length(P.xz) < thickness) return vec3(0.0, 1.0, 0.0); // Y grün\r
+    // Nähe zur Z-Achse\r
+    if (abs(P.z) <= halfSize && length(P.xy) < thickness) return vec3(0.0, 0.0, 1.0); // Z blau\r
+    return vec3(0.0);\r
+}\r
 \r
 float edgeDistance(vec3 p, float r) {\r
   // Distanz zu den drei Paaren |x|=r, |y|=r, |z|=r\r
@@ -269,34 +278,12 @@ float edgeDistance(vec3 p, float r) {\r
   return min(min(eXY, eXZ), eYZ);\r
 }\r
 \r
+layout(location=0) out vec4 fColor;\r
 \r
-void main() {\r
-  // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====\r
-  // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.\r
-  if (uShowAxes) {\r
-      // Position im Welt-/Objektraum (abhängig von deinem Setup)\r
-      vec3 p = fragPos;  // oder die Weltposition aus dem Raymarching\r
-      \r
-      float thickness = 0.02; // Achsenradius\r
-      \r
-      // Abstände zu den Achsen\r
-      float dx = length(p.yz); // Abstand von YZ-Ebene => X-Achse\r
-      float dy = length(p.xz); // Abstand von XZ-Ebene => Y-Achse\r
-      float dz = length(p.xy); // Abstand von XY-Ebene => Z-Achse\r
-\r
-      vec3 axisColor = vec3(0.0);\r
-\r
-      if (dx < thickness) axisColor = vec3(1.0, 0.0, 0.0); // X-Achse rot\r
-      if (dy < thickness) axisColor = vec3(0.0, 1.0, 0.0); // Y-Achse grün\r
-      if (dz < thickness) axisColor = vec3(0.0, 0.0, 1.0); // Z-Achse blau\r
-\r
-      if (axisColor != vec3(0.0)) {\r
-          fragColor = vec4(axisColor, 1.0);\r
-      }\r
-  }\r
 \r
 \r
 \r
+void main() {\r
   if (uShowBox) {\r
     float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante\r
     float aa = fwidth(d);                           // Anti-Aliasing\r
@@ -309,26 +296,43 @@ void main() {\r
     }\r
   }\r
 \r
-  // ===== Dein bisheriger Ray-Setup =====\r
+  // Ray Setup (wie gehabt)\r
   vec3 ro = vUV;\r
   vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz\r
                                  : vUV - uModelInverse[3].xyz;\r
   rd = normalize(rd);\r
   ro += 1e-4 * rd; // kleiner Push-off gegen Self-Intersection\r
-  \r
-  vec4 col = vec4(1.0f, 0.0f, 0.0f, 1.0f);\r
+\r
+  // Grundfarbe (du kannst das wie gehabt variieren)\r
+  vec4 col = vec4(1.0, 0.0, 0.0, 1.0);\r
 \r
   vec3 p, n;\r
   float lambda;\r
 \r
+  // Schnitt mit F(x,y,z)=0 suchen\r
   lambda = cubicSurfaceIntersect(ro, rd, uCoeffs);\r
-  if (lambda < 0.0f)\r
+  if (lambda < 0.0)\r
     discard;\r
+\r
+  // Trefferpunkt + Normale\r
   p = ro + lambda * rd;\r
   n = cubicSurfaceNormal(p, uCoeffs);\r
 \r
-  // Headlight-/View-Shading\r
+  // Headlight/View-Shading (wie gehabt)\r
   float shade = abs(dot(normalize(rd), normalize(n)));\r
-  fColor = vec4(col.rgb * shade, col.a);\r
-}\r
-`,v=3,T=.03;function x(r){const n=window.innerWidth,o=window.innerHeight,e=16/9;let c=n,f=n/e;f>o&&(f=o,c=o*e);const i=window.devicePixelRatio||1;r.width=Math.max(1,Math.floor(c*i)),r.height=Math.max(1,Math.floor(f*i)),r.style.width=`${c}px`,r.style.height=`${f}px`}function w(r,n,o){const e=r.createShader(n);if(r.shaderSource(e,o),r.compileShader(e),!r.getShaderParameter(e,r.COMPILE_STATUS))throw new Error(r.getShaderInfoLog(e)||"shader error");return e}function X(r,n,o){const e=r.createProgram();if(r.attachShader(e,w(r,r.VERTEX_SHADER,n)),r.attachShader(e,w(r,r.FRAGMENT_SHADER,o)),r.linkProgram(e),!r.getProgramParameter(e,r.LINK_STATUS))throw new Error(r.getProgramInfoLog(e)||"link error");return e}function D(r,n){const o=v,e=new Float32Array([-3,-3,-3,o,-3,-3,-3,o,-3,o,o,-3,-3,-3,o,o,-3,o,-3,o,o,o,o,o]),c=new Uint16Array([0,2,1,1,2,3,4,5,6,6,5,7,0,1,5,0,5,4,2,6,7,2,7,3,7,5,1,7,1,3,0,4,6,0,6,2]),f=r.createVertexArray();r.bindVertexArray(f);const i=r.createBuffer();r.bindBuffer(r.ARRAY_BUFFER,i),r.bufferData(r.ARRAY_BUFFER,e,r.STATIC_DRAW);const d=r.getAttribLocation(n,"aPosition");r.enableVertexAttribArray(d),r.vertexAttribPointer(d,3,r.FLOAT,!1,0,0);const t=r.createBuffer();return r.bindBuffer(r.ELEMENT_ARRAY_BUFFER,t),r.bufferData(r.ELEMENT_ARRAY_BUFFER,c,r.STATIC_DRAW),r.bindVertexArray(null),{vao:f,iboSize:c.length}}function z(r){const n=new h(45,r,.1,100);return n.position.set(0,0,8),n.lookAt(0,0,0),n}const p=5;function R(r){const n=p,o=new y(-5*r,n*r,n,-5,.1,100);return o.position.set(0,0,8),o.lookAt(0,0,0),o}function A(r,n){const o=new E(r,n);return o.enableDamping=!0,o.dampingFactor=.08,o.rotateSpeed=.9,o.zoomSpeed=1,o.panSpeed=.9,o.target.set(0,0,0),o.update(),o}function k(){var l;const r=document.getElementById("glcanvas");x(r);const n=r.getContext("webgl2"),o=X(n,M,P);n.useProgram(o);const{vao:e,iboSize:c}=D(n,o),f=r.width/r.height;let i=z(f),d=A(i,r);const t={gl:n,prog:o,vao:e,iboSize:c,uProjection:n.getUniformLocation(o,"uProjection"),uModelView:n.getUniformLocation(o,"uModelView"),uModelInverse:n.getUniformLocation(o,"uModelInverse"),uOrthographic:n.getUniformLocation(o,"uOrthographic"),uSurface:n.getUniformLocation(o,"uSurface"),uCoeffs:n.getUniformLocation(o,"uCoeffs"),uShowAxes:n.getUniformLocation(o,"uShowAxes"),uShowBox:n.getUniformLocation(o,"uShowBox"),uHalf:n.getUniformLocation(o,"uHalf"),uEdgeThickness:n.getUniformLocation(o,"uEdgeThickness"),viewMode:1,surfaceMode:1,showAxes:!0,showBox:!0,coeffs:new Float32Array([0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,-1]),camera:i,controls:d};n.clearColor(1,1,1,1),n.enable(n.DEPTH_TEST),n.enable(n.CULL_FACE),window.addEventListener("resize",()=>{x(r);const s=r.width/r.height;t.viewMode===2&&t.camera instanceof y?(t.camera.left=-5*s,t.camera.right=p*s,t.camera.top=p,t.camera.bottom=-5,t.camera.updateProjectionMatrix()):t.camera instanceof h&&(t.camera.aspect=s,t.camera.updateProjectionMatrix())}),window.addEventListener("message",s=>{const a=s.data||{};if(a.type==="coeffs"&&Array.isArray(a.coeffs)&&a.coeffs.length===20)t.coeffs.set(a.coeffs);else if(a.type==="controls"){if(typeof a.viewMode=="number"){const m=a.viewMode|0;m!==t.viewMode&&I(t,m)}typeof a.surfaceMode=="number"&&(t.surfaceMode=a.surfaceMode|0),typeof a.showAxes=="boolean"&&(t.showAxes=!!a.showAxes),typeof a.showBox=="boolean"&&(t.showBox=!!a.showBox)}});try{(l=window.parent)==null||l.postMessage({type:"ready"},"*")}catch{}return t}function I(r,n){const o=r.gl.canvas,e=o.width/o.height;r.controls.dispose(),n===2?r.camera=R(e):r.camera=z(e),r.controls=A(r.camera,o),r.viewMode=n}function U(r){const{gl:n}=r;n.viewport(0,0,n.canvas.width,n.canvas.height),n.clear(n.COLOR_BUFFER_BIT|n.DEPTH_BUFFER_BIT),n.useProgram(r.prog),n.bindVertexArray(r.vao),r.uShowBox&&n.uniform1i(r.uShowBox,r.showBox?1:0),n.uniform1f(r.uHalf,v),n.uniform1f(r.uEdgeThickness,T),n.uniform1i(r.uSurface,r.surfaceMode),n.uniform1fv(r.uCoeffs,r.coeffs),n.uniform1i(r.uOrthographic,r.viewMode===2?1:0);const o=1.6,e=(c,f)=>{f?n.colorMask(...f):n.colorMask(!0,!0,!0,!0),r.controls.update(),r.camera.updateMatrixWorld(!0),c!==0&&(r.camera.position.x-=c,r.camera.updateMatrixWorld(!0));const i=new Float32Array(r.camera.projectionMatrix.elements);n.uniformMatrix4fv(r.uProjection,!1,i);const d=new Float32Array(r.camera.matrixWorldInverse.elements),t=u();g(t,t,[o,o,o]);const l=S(d),s=u();B(s,l,t),n.uniformMatrix4fv(r.uModelView,!1,s);const a=C(u(),s);n.uniformMatrix4fv(r.uModelInverse,!1,a),n.uniform1i(r.uShowAxes,r.showAxes?1:0),n.drawElements(n.TRIANGLES,r.iboSize,n.UNSIGNED_SHORT,0),c!==0&&(r.camera.position.x+=c,r.camera.updateMatrixWorld(!0))};r.viewMode===3?(e(-.12,[!0,!1,!1,!0]),n.clear(n.DEPTH_BUFFER_BIT),e(.12,[!1,!0,!0,!0]),n.colorMask(!0,!0,!0,!0)):e(0),n.bindVertexArray(null)}function b(r){U(r),requestAnimationFrame(()=>b(r))}window.addEventListener("load",()=>{const r=k();b(r)});
+\r
+  // Basisfarbe (vor Axen-Overlay)\r
+  vec3 baseRGB = col.rgb * shade;\r
+\r
+  // ======= NEU: Achsen-Overlay innerhalb des Würfels =======\r
+  if (uShowAxes) {\r
+    // Nutze deine EdgeThickness (mit Mindestwert), so wirken Achsen visuell konsistent\r
+    float thickness = max(uEdgeThickness, 0.02);\r
+    vec3 axis = axisColorInsideCube(p, uHalf, thickness);\r
+    if (axis != vec3(0.0)) {\r
+      baseRGB = axis; // hartes Overlay; alternativ könntest du weich einblenden\r
+    }\r
+  }\r
+\r
+  fColor = vec4(baseRGB, col.a);\r
+}`,v=3,k=.03;function m(r){const n=window.innerWidth,o=window.innerHeight,e=16/9;let c=n,f=n/e;f>o&&(f=o,c=o*e);const i=window.devicePixelRatio||1;r.width=Math.max(1,Math.floor(c*i)),r.height=Math.max(1,Math.floor(f*i)),r.style.width=`${c}px`,r.style.height=`${f}px`}function h(r,n,o){const e=r.createShader(n);if(r.shaderSource(e,o),r.compileShader(e),!r.getShaderParameter(e,r.COMPILE_STATUS))throw new Error(r.getShaderInfoLog(e)||"shader error");return e}function T(r,n,o){const e=r.createProgram();if(r.attachShader(e,h(r,r.VERTEX_SHADER,n)),r.attachShader(e,h(r,r.FRAGMENT_SHADER,o)),r.linkProgram(e),!r.getProgramParameter(e,r.LINK_STATUS))throw new Error(r.getProgramInfoLog(e)||"link error");return e}function I(r,n){const o=v,e=new Float32Array([-3,-3,-3,o,-3,-3,-3,o,-3,o,o,-3,-3,-3,o,o,-3,o,-3,o,o,o,o,o]),c=new Uint16Array([0,2,1,1,2,3,4,5,6,6,5,7,0,1,5,0,5,4,2,6,7,2,7,3,7,5,1,7,1,3,0,4,6,0,6,2]),f=r.createVertexArray();r.bindVertexArray(f);const i=r.createBuffer();r.bindBuffer(r.ARRAY_BUFFER,i),r.bufferData(r.ARRAY_BUFFER,e,r.STATIC_DRAW);const d=r.getAttribLocation(n,"aPosition");r.enableVertexAttribArray(d),r.vertexAttribPointer(d,3,r.FLOAT,!1,0,0);const t=r.createBuffer();return r.bindBuffer(r.ELEMENT_ARRAY_BUFFER,t),r.bufferData(r.ELEMENT_ARRAY_BUFFER,c,r.STATIC_DRAW),r.bindVertexArray(null),{vao:f,iboSize:c.length}}function z(r){const n=new w(45,r,.1,100);return n.position.set(0,0,8),n.lookAt(0,0,0),n}const p=5;function R(r){const n=p,o=new y(-5*r,n*r,n,-5,.1,100);return o.position.set(0,0,8),o.lookAt(0,0,0),o}function b(r,n){const o=new E(r,n);return o.enableDamping=!0,o.dampingFactor=.08,o.rotateSpeed=.9,o.zoomSpeed=1,o.panSpeed=.9,o.target.set(0,0,0),o.update(),o}function X(){var l;const r=document.getElementById("glcanvas");m(r);const n=r.getContext("webgl2"),o=T(n,M,P);n.useProgram(o);const{vao:e,iboSize:c}=I(n,o),f=r.width/r.height;let i=z(f),d=b(i,r);const t={gl:n,prog:o,vao:e,iboSize:c,uProjection:n.getUniformLocation(o,"uProjection"),uModelView:n.getUniformLocation(o,"uModelView"),uModelInverse:n.getUniformLocation(o,"uModelInverse"),uOrthographic:n.getUniformLocation(o,"uOrthographic"),uSurface:n.getUniformLocation(o,"uSurface"),uCoeffs:n.getUniformLocation(o,"uCoeffs"),uShowAxes:n.getUniformLocation(o,"uShowAxes"),uShowBox:n.getUniformLocation(o,"uShowBox"),uHalf:n.getUniformLocation(o,"uHalf"),uEdgeThickness:n.getUniformLocation(o,"uEdgeThickness"),viewMode:1,surfaceMode:1,showAxes:!0,showBox:!0,coeffs:new Float32Array([0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,-1]),camera:i,controls:d};n.clearColor(1,1,1,1),n.enable(n.DEPTH_TEST),n.enable(n.CULL_FACE),window.addEventListener("resize",()=>{m(r);const s=r.width/r.height;t.viewMode===2&&t.camera instanceof y?(t.camera.left=-5*s,t.camera.right=p*s,t.camera.top=p,t.camera.bottom=-5,t.camera.updateProjectionMatrix()):t.camera instanceof w&&(t.camera.aspect=s,t.camera.updateProjectionMatrix())}),window.addEventListener("message",s=>{const a=s.data||{};if(a.type==="coeffs"&&Array.isArray(a.coeffs)&&a.coeffs.length===20)t.coeffs.set(a.coeffs);else if(a.type==="controls"){if(typeof a.viewMode=="number"){const x=a.viewMode|0;x!==t.viewMode&&U(t,x)}typeof a.surfaceMode=="number"&&(t.surfaceMode=a.surfaceMode|0),typeof a.showAxes=="boolean"&&(t.showAxes=!!a.showAxes),typeof a.showBox=="boolean"&&(t.showBox=!!a.showBox)}});try{(l=window.parent)==null||l.postMessage({type:"ready"},"*")}catch{}return t}function U(r,n){const o=r.gl.canvas,e=o.width/o.height;r.controls.dispose(),n===2?r.camera=R(e):r.camera=z(e),r.controls=b(r.camera,o),r.viewMode=n}function D(r){const{gl:n}=r;n.viewport(0,0,n.canvas.width,n.canvas.height),n.clear(n.COLOR_BUFFER_BIT|n.DEPTH_BUFFER_BIT),n.useProgram(r.prog),n.bindVertexArray(r.vao),r.uShowBox&&n.uniform1i(r.uShowBox,r.showBox?1:0),n.uniform1f(r.uHalf,v),n.uniform1f(r.uEdgeThickness,k),n.uniform1i(r.uSurface,r.surfaceMode),n.uniform1fv(r.uCoeffs,r.coeffs),n.uniform1i(r.uOrthographic,r.viewMode===2?1:0);const o=1.6,e=(c,f)=>{f?n.colorMask(...f):n.colorMask(!0,!0,!0,!0),r.controls.update(),r.camera.updateMatrixWorld(!0),c!==0&&(r.camera.position.x-=c,r.camera.updateMatrixWorld(!0));const i=new Float32Array(r.camera.projectionMatrix.elements);n.uniformMatrix4fv(r.uProjection,!1,i);const d=new Float32Array(r.camera.matrixWorldInverse.elements),t=u();S(t,t,[o,o,o]);const l=B(d),s=u();g(s,l,t),n.uniformMatrix4fv(r.uModelView,!1,s);const a=C(u(),s);n.uniformMatrix4fv(r.uModelInverse,!1,a),n.uniform1i(r.uShowAxes,r.showAxes?1:0),n.drawElements(n.TRIANGLES,r.iboSize,n.UNSIGNED_SHORT,0),c!==0&&(r.camera.position.x+=c,r.camera.updateMatrixWorld(!0))};r.viewMode===3?(e(-.12,[!0,!1,!1,!0]),n.clear(n.DEPTH_BUFFER_BIT),e(.12,[!1,!0,!0,!0]),n.colorMask(!0,!0,!0,!0)):e(0),n.bindVertexArray(null)}function A(r){D(r),requestAnimationFrame(()=>A(r))}window.addEventListener("load",()=>{const r=X();A(r)});
