@@ -8,7 +8,7 @@ uniform int uOrthographic;
 uniform int uSurface;
 uniform float uCoeffs[20];
 
-uniform bool uShowAxis;
+uniform bool uShowAxes;
 uniform bool  uShowBox;          // per TS toggeln
 uniform float uHalf;             // = r (z.B. 3.0)
 uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)
@@ -257,7 +257,7 @@ float edgeDistance(vec3 p, float r) {
 void main() {
   // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====
   // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.
-  if (uShowAxis) {
+  if (uShowAxes) {
       // Position im Welt-/Objektraum (abhängig von deinem Setup)
       vec3 p = fragPos;  // oder die Weltposition aus dem Raymarching
       
