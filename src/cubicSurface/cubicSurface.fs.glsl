@@ -8,6 +8,7 @@ uniform int uOrthographic;
 uniform int uSurface;
 uniform float uCoeffs[20];
 
+uniform bool uShowAxis;
 uniform bool  uShowBox;          // per TS toggeln
 uniform float uHalf;             // = r (z.B. 3.0)
 uniform float uEdgeThickness;    // Linienstärke in Objektraum-Einheiten (z.B. 0.03)
@@ -256,6 +257,30 @@ float edgeDistance(vec3 p, float r) {
 void main() {
   // ===== Box-Kanten zuerst prüfen (BEVOR irgendwas discardet wird) =====
   // vUV ist hier deine Objektraum-Position auf der Cube-Fläche.
+  if (uShowAxis) {
+      // Position im Welt-/Objektraum (abhängig von deinem Setup)
+      vec3 p = fragPos;  // oder die Weltposition aus dem Raymarching
+      
+      float thickness = 0.02; // Achsenradius
+      
+      // Abstände zu den Achsen
+      float dx = length(p.yz); // Abstand von YZ-Ebene => X-Achse
+      float dy = length(p.xz); // Abstand von XZ-Ebene => Y-Achse
+      float dz = length(p.xy); // Abstand von XY-Ebene => Z-Achse
+
+      vec3 axisColor = vec3(0.0);
+
+      if (dx < thickness) axisColor = vec3(1.0, 0.0, 0.0); // X-Achse rot
+      if (dy < thickness) axisColor = vec3(0.0, 1.0, 0.0); // Y-Achse grün
+      if (dz < thickness) axisColor = vec3(0.0, 0.0, 1.0); // Z-Achse blau
+
+      if (axisColor != vec3(0.0)) {
+          fragColor = vec4(axisColor, 1.0);
+      }
+  }
+
+
+
   if (uShowBox) {
     float d  = edgeDistance(vUV, uHalf);           // Abstand zur nächsten Kante
     float aa = fwidth(d);                           // Anti-Aliasing

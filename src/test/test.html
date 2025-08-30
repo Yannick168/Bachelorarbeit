@@ -1,10 +1,14 @@
+<!-- KaTeX einbinden -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.css" />
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js"></script> <!-- Bootstrap (optional, wie gehabt) -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-<script id="MathJax-script" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 <div class="container my-4">
     <div class="row">
         <div class="col-12">
             <h3 class="mb-3">
-                Cubic Surface
+                Cubic Surfaces
             </h3>
         </div>
         <!-- Controls -->
@@ -53,10 +57,19 @@
                     </div>
 
                     <div class="col-12 col-md-3">
+                      <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" id="showAxes" checked />
+                        <label class="form-check-label" for="showAxes">show Axes</label>
+                      </div>
+                    </div>
+
+                    <div class="col-12 col-md-3">
                         <div class="form-check mt-4">
                             <input class="form-check-input" type="checkbox" id="showBox" checked="checked" /> <label class="form-check-label" for="showBox">show Volumecube</label>
                         </div>
                     </div>
+
+
                 </div>
             </div>
             <!-- Sliders -->
@@ -85,60 +98,42 @@
 // === Render-Seite ===
 const cubicUrl = "https://yannick168.github.io/Bachelorarbeit/src/cubicSurface/cubicSurface.html";
 
-/* Monomiale in Uniform-Reihenfolge */
+/* Monomiale (ASCII/TeX-Keys) */
 const monomials = [
-  "x³","y³","z³",
-  "x²y","x²z","y²z","yz²","xy²","xz²","xyz",
-  "x²","y²","z²",
+  "x^3","y^3","z^3",
+  "x^2y","x^2z","y^2z","yz^2","xy^2","xz^2","xyz",
+  "x^2","y^2","z^2",
   "xz","xy","yz",
   "x","y","z",
   "1"
 ];
+
 const rows = [
-  ["x³","y³","z³","x²y","x²z","y²z","yz²","xy²","xz²","xyz"],
-  ["x²","y²","z²","xz","xy","yz"],
+  ["x^3","y^3","z^3","x^2y","x^2z","y^2z","yz^2","xy^2","xz^2","xyz"],
+  ["x^2","y^2","z^2","xz","xy","yz"],
   ["x","y","z"],
   ["1"]
 ];
 
-/* Defaults: Kugel x² + y² + z² − 1 = 0 */
+/* Defaults: Kugel x^2 + y^2 + z^2 − 1 = 0 */
 const defaults = {
-  "x³":0,"y³":0,"z³":0,
-  "x²y":0,"x²z":0,"y²z":0,"yz²":0,"xy²":0,"xz²":0,"xyz":0,
-  "x²":1,"y²":1,"z²":1,
+  "x^3":0,"y^3":0,"z^3":0,
+  "x^2y":0,"x^2z":0,"y^2z":0,"yz^2":0,"xy^2":0,"xz^2":0,"xyz":0,
+  "x^2":1,"y^2":1,"z^2":1,
   "xz":0,"xy":0,"yz":0,
   "x":0,"y":0,"z":0,
   "1":-1
 };
 
-/* Presets */
+/* Presets in derselben Reihenfolge wie monomials */
 const PRESETS = {
-  sphere: [
-    0,0,0,  0,0,0,0,0,0,0,  1,1,1,  0,0,0,  0,0,0,  -1
-  ],
-  clebsch: [
-    81,81,81,  -189,-189,-189,-189,-189,-189, 54,  -9,-9,-9,  126,126,126,  -9,-9,-9,  1
-  ],
-  cayley: [
-    0,0,0,  0,0,0,0,0,0,1,  0,0,0,  0,0,0,  0,1,1,  1
-  ],
-  monkeySaddle: [
-    1,0,0,  0,0,0,0,-3,0,0,  0,0,0,  0,0,0,  0,0,-1,  0
-  ],
-  cylinder: [ 
-  0, 0, 0,                // x^3, y^3, z^3
-  0, 0, 0, 0, 0, 0, 0,    // x^2y, x^2z, y^2z, yz^2, xy^2, xz^2, xyz   (7 Stück!)
-  1, 1, 0,                // x^2, y^2, z^2
-  0, 0, 0,                
-  0, 0, 0,                
-  -1                      
-  ],
-  crosspropeller: [
-    0,0,0,  0,0,0,0,0,0,1,  1,0.1,0,  0,0,0,  0,0,0,  0
-  ],
-  custom: [
-    0,0,0,  0,0,0,0,0,0,0,  0,0,0,  0,0,0,  0,0,0,  0
-  ]
+  sphere:         [0,0,0,  0,0,0,0,0,0,0,  1,1,1,  0,0,0,  0,0,0,  -1],
+  clebsch:        [81,81,81,  -189,-189,-189,-189,-189,-189, 54,  -9,-9,-9,  126,126,126,  -9,-9,-9,  1],
+  cayley:         [0,0,0,  0,0,0,0,0,0,1,  0,0,0,  0,0,0,  0,1,1,  1],
+  monkeySaddle:   [1,0,0,  0,0,0,0,-3,0,0,  0,0,0,  0,0,0,  0,0,-1,  0],
+  cylinder:       [0,0,0,  0,0,0,0,0,0,0,  1,1,0,  0,0,0,  0,0,0,  -1],
+  crosspropeller: [0,0,0,  0,0,0,0,0,0,1,  1,0.1,0,  0,0,0,  0,0,0,  0],
+  custom:         [0,0,0,  0,0,0,0,0,0,0,  0,0,0,  0,0,0,  0,0,0,  0]
 };
 
 /* States */
@@ -152,40 +147,39 @@ const LABEL_STYLE = "font-size:10px;font-weight:600;text-align:center;margin-bot
 const RANGE_STYLE = "width:100%;height:12px;padding:0;margin:0 0 2px 0;";
 const NUM_STYLE   = "width:100%;height:20px;font-size:11px;text-align:center;padding:1px;";
 
-/* MathJax Helpers */
+/* KaTeX: Monomial-Key -> LaTeX-Body (keine Delimiter) */
 const latexMono = {
-  "x³":"x^{3}","y³":"y^{3}","z³":"z^{3}",
-  "x²y":"x^{2}y","x²z":"x^{2}z","y²z":"y^{2}z","yz²":"y z^{2}","xy²":"x y^{2}","xz²":"x z^{2}","xyz":"x y z",
-  "x²":"x^{2}","y²":"y^{2}","z²":"z^{2}",
+  "x^3":"x^{3}","y^3":"y^{3}","z^3":"z^{3}",
+  "x^2y":"x^{2}y","x^2z":"x^{2}z","y^2z":"y^{2}z","yz^2":"y z^{2}",
+  "xy^2":"x y^{2}","xz^2":"x z^{2}","xyz":"x y z",
+  "x^2":"x^{2}","y^2":"y^{2}","z^2":"z^{2}",
   "xz":"x z","xy":"x y","yz":"y z",
   "x":"x","y":"y","z":"z","1":"1"
 };
-const NEAR_ZERO = 1e-9;
-const isZero = (n)=>Math.abs(n) < NEAR_ZERO;
 
-/* Komma-/Punkt-Parsing */
+/* Parsing/Format */
 function parseNum(s){
   if (typeof s !== 'string') s = String(s ?? '');
   return parseFloat(s.replace(',', '.'));
 }
-
-/* Zahl -> TeX mit deutschem Komma */
+const NEAR_ZERO = 1e-9;
+const isZero = (n)=>Math.abs(n) < NEAR_ZERO;
 function niceNumber(n){
-  let s = Number(n).toFixed(3).replace(/\.?0+$/,''); // 1.230 -> 1.23
+  let s = Number(n).toFixed(3).replace(/\.?0+$/,'');
   if (s === '-0') s = '0';
-  return s.replace('.', '{,}');
+  return s;
 }
 
-/* Einzelterm zu TeX */
-function termToTeX(coeff, monoLabel){
+/* Einzelterm -> TeX */
+function termToTeX(coeff, monoKey){
   const abs = Math.abs(coeff);
-  if (monoLabel === "1") return niceNumber(abs);
-  const mono = latexMono[monoLabel] || monoLabel;
-  if (Math.abs(abs - 1) < NEAR_ZERO) return mono;     // 1·x -> x
+  if (monoKey === "1") return niceNumber(abs);
+  const mono = latexMono[monoKey] || monoKey;
+  if (Math.abs(abs - 1) < NEAR_ZERO) return mono; // 1·x -> x
   return `${niceNumber(abs)}\\,${mono}`;
 }
 
-/* Wie viele Terme pro Zeile? (abhängig von Boxbreite) */
+/* Zeilenbreite */
 function termsPerLineForWidth(px){
   if (px < 420) return 6;
   if (px < 640) return 8;
@@ -194,7 +188,7 @@ function termsPerLineForWidth(px){
   return 14;
 }
 
-/* Formel mit Zeilenumbrüchen per aligned-Umgebung bauen */
+/* Formel-TeX mit aligned und weichen Zeilenumbrüchen */
 function buildFormulaTeXWrapped(coeffs, termsPerLine){
   const parts = [];
   monomials.forEach((m,i) => {
@@ -226,33 +220,21 @@ function buildFormulaTeXWrapped(coeffs, termsPerLine){
   return `\\begin{aligned} ${lines.join(' \\\\ ')} \\end{aligned}`;
 }
 
-/* MathJax typeset */
-function mjTypeset(el){
-  if (window.MathJax && MathJax.typesetPromise) {
-    MathJax.typesetPromise([el]).catch(()=>{});
-  }
-}
-function debounce(fn, wait=150){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-
-/* Formel aktualisieren */
-function updateFormula(){
-  const coeffs = currentCoeffs();
-  const box = document.getElementById("formulaBox");
-  const tpl = termsPerLineForWidth(box.clientWidth);
-  const tex = buildFormulaTeXWrapped(coeffs, tpl);
-  const out = document.getElementById("formulaText");
-  out.innerHTML = `\\[ ${tex} \\]`;
-  mjTypeset(out);
+/* Slider-Label via KaTeX (ohne Klammern/Delimiter) */
+function monoLabelHTML(monoKey){
+  const tex = latexMono[monoKey] || monoKey;
+  return katex.renderToString(tex, { displayMode: false, throwOnError: false });
 }
 
-/* UI bauen */
+/* UI */
 function createSlider(mono){
   const base = Number(defaults[mono] ?? 0);
-  const wrap = document.createElement("div"); wrap.setAttribute("style", CELL_STYLE);
+  const wrap = document.createElement("div");
+  wrap.setAttribute("style", CELL_STYLE);
 
   const lab = document.createElement("div");
   lab.setAttribute("style", LABEL_STYLE);
-  lab.innerHTML = `\\(${latexMono[mono] || mono}\\)`;
+  lab.innerHTML = monoLabelHTML(mono); // keine \( \), keine Klammern sichtbar
 
   const num = document.createElement("input");
   num.type = "number"; num.setAttribute('lang','de');
@@ -298,7 +280,6 @@ function buildSliders(){
     rowList.forEach(m => row.appendChild(createSlider(m)));
     container.appendChild(row);
   });
-  mjTypeset(container);
 }
 
 function currentCoeffs(){
@@ -306,6 +287,18 @@ function currentCoeffs(){
     const v = parseNum(inputs[i]?.value);
     return isFinite(v) ? v : 0;
   });
+}
+
+/* ==== Formel rendern: KaTeX in DOM (copy-tex aktiv) ==== */
+function updateFormula(){
+  const coeffs = currentCoeffs();
+  const box = document.getElementById("formulaBox");
+  const tpl = termsPerLineForWidth(box.clientWidth);
+  const tex = buildFormulaTeXWrapped(coeffs, tpl); // LaTeX-String
+
+  const out = document.getElementById("formulaText");
+  // displayMode -> Blockformel; copy-tex sorgt beim Kopieren für LaTeX-Quelltext
+  katex.render(tex, out, { displayMode: true, throwOnError: false });
 }
 
 /* Messaging */
@@ -318,8 +311,10 @@ function sendAll(){
 
   const viewMode = parseInt(document.getElementById("viewMode").value, 10);
   const showBox = document.getElementById("showBox").checked;
-  frame.contentWindow.postMessage({ type: "controls", viewMode, showBox }, "*");
+  const showAxes = document.getElementById("showAxes").checked;
+  frame.contentWindow.postMessage({ type: "controls", viewMode, showBox, showAxes }, "*");
 }
+
 
 function resetSlidersToCenter(span = 5){
   for (let i = 0; i < monomials.length; i++) {
@@ -350,27 +345,40 @@ function applyPreset(key){
   resetSlidersToCenter(5);
 }
 
-/* Init */
-const frame = document.getElementById("cubicFrame");
-frame.src = cubicUrl + (cubicUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
+/* Init (nachdem KaTeX geladen ist) */
+function initApp(){
+  const frame = document.getElementById("cubicFrame");
+  frame.src = cubicUrl + (cubicUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
 
-buildSliders();
-applyPreset(document.getElementById("surfaceMode").value);
-sendAll();
-updateFormula();
-
-/* Events */
-document.getElementById("viewMode").addEventListener("change", sendAll);
-document.getElementById("surfaceMode").addEventListener("change", (e) => {
-  applyPreset(e.target.value);
+  buildSliders();
+  applyPreset(document.getElementById("surfaceMode").value);
   sendAll();
   updateFormula();
-});
-document.getElementById("showBox").addEventListener("change", sendAll);
 
-frame.addEventListener("load", () => setTimeout(() => { sendAll(); updateFormula(); }, 150));
-window.addEventListener("message", (e) => { if (e.data && e.data.type === "ready") { sendAll(); updateFormula(); }});
+  document.getElementById("viewMode").addEventListener("change", sendAll);
+  document.getElementById("surfaceMode").addEventListener("change", (e) => {
+    applyPreset(e.target.value);
+    sendAll();
+    updateFormula();
+  });
+  document.getElementById("showBox").addEventListener("change", sendAll);
 
-window.addEventListener('resize', debounce(updateFormula, 150));
+  frame.addEventListener("load", () => setTimeout(() => { sendAll(); updateFormula(); }, 150));
+
+  let _t;
+  window.addEventListener('resize', () => {
+    clearTimeout(_t);
+    _t = setTimeout(updateFormula, 150);
+  });
+}
+
+/* Warten bis KaTeX verfügbar ist (defer kann asynchron laden) */
+(function waitForKatex(){
+  if (window.katex && typeof katex.render === "function") {
+    initApp();
+  } else {
+    setTimeout(waitForKatex, 50);
+  }
+})();
 /* ]]> */
 </script>

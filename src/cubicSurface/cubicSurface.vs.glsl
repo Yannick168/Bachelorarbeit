@@ -9,7 +9,7 @@ uniform mat4 uProjection;
 out vec3 vUV;
 
 void main() {
-    vec4 pos = vec4(aPosition,1.0);
+    vec4 pos = vec4(aPosition, 1.0);
     vUV = pos.xyz;
     gl_Position = uProjection * uModelView * pos;
 }

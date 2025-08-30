@@ -22,6 +22,8 @@ type Ctx = {
   uSurface: WebGLUniformLocation | null;
   uCoeffs: WebGLUniformLocation | null;
 
+  uShowAxes: WebGLUniformLocation | null;
+
   uShowBox: WebGLUniformLocation | null;
   uHalf: WebGLUniformLocation | null;
   uEdgeThickness: WebGLUniformLocation | null;
@@ -33,8 +35,8 @@ type Ctx = {
   // Controls/Anzeige
   viewMode: number;   // 1=persp, 2=ortho, 3=stereo (anaglyph)
   surfaceMode: number;
+  showAxes: boolean;
   showBox: boolean;
-
   coeffs: Float32Array;
 };
 
@@ -156,12 +158,13 @@ function init(): Ctx {
     uOrthographic: gl.getUniformLocation(prog, 'uOrthographic'),
     uSurface: gl.getUniformLocation(prog, 'uSurface'),
     uCoeffs: gl.getUniformLocation(prog, 'uCoeffs'),
+    uShowAxes: gl.getUniformLocation(prog, 'uShowAxes'),
     uShowBox: gl.getUniformLocation(prog, 'uShowBox'),
     uHalf: gl.getUniformLocation(prog, 'uHalf'),
     uEdgeThickness: gl.getUniformLocation(prog, 'uEdgeThickness'),
-
     viewMode: 1,               // Start: Perspective
     surfaceMode: 1,
+    showAxes: true,
     showBox: true,
     coeffs: new Float32Array([ 0,0,0, 0,0,0,0,0,0,0, 1,1,1, 0,0,0, 0,0,0, -1 ]),
     camera, controls
@@ -198,6 +201,7 @@ function init(): Ctx {
         if (newMode !== ctx.viewMode) switchCamera(ctx, newMode);
       }
       if (typeof d.surfaceMode === 'number') ctx.surfaceMode = d.surfaceMode|0;
+      if (typeof d.showAxes === 'boolean') ctx.showAxes = !!d.showAxes;
       if (typeof d.showBox === 'boolean') ctx.showBox = !!d.showBox;
     }
   });
@@ -277,6 +281,9 @@ function draw(ctx: Ctx){
 
     const invMV = mat4.invert(mat4.create(), mv)!;
     gl.uniformMatrix4fv(ctx.uModelInverse, false, invMV);
+
+    gl.uniform1i(ctx.uShowAxes, ctx.showAxes ? 1 : 0);
+
 
     // draw
     gl.drawElements(gl.TRIANGLES, ctx.iboSize, gl.UNSIGNED_SHORT, 0);

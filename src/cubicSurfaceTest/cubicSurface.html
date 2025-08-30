@@ -265,8 +265,10 @@ function initApp(){
 
   document.getElementById("viewMode").addEventListener("change", onUIChange);
   document.getElementById("surfaceMode").addEventListener("change", (e)=>{ applyPreset(e.target.value); });
+  document.getElementById("showAxes").addEventListener("change", sendAll);
   document.getElementById("showBox").addEventListener("change", onUIChange);
 
+  
   renderer = new Renderer(document.getElementById("glCanvas"));
   onUIChange();
 }
