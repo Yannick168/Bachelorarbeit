@@ -110,7 +110,7 @@ function createCube(gl: GL, prog: WebGLProgram){
 
 function makePerspective(aspect: number) {
   const cam = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  cam.position.set(0, 0, 8);   // entspricht deinem dist = 8
+  cam.position.set(10, 10, 15);   
   cam.lookAt(0, 0, 0);
   return cam;
 }
