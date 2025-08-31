@@ -164,7 +164,7 @@ function init(): Ctx {
 
   gl.clearColor(1,1,1,1);
   gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.CULL_FACE);
+  gl.disable(gl.CULL_FACE);
 
   // Resize -> Kamera anpassen
 window.addEventListener('resize', () => {
