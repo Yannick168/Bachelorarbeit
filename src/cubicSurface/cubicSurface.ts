@@ -28,23 +28,20 @@ type Ctx = {
   uHalf: WebGLUniformLocation | null;
   uEdgeThickness: WebGLUniformLocation | null;
 
-  // Kamera/Controls via Three.js
   camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
   controls: OrbitControls;
 
-  // Controls/Anzeige
-  viewMode: number;   // 1=persp, 2=ortho, 3=stereo (anaglyph)
+  viewMode: number;   // 1=persp, 2=ortho, 3=stereo
   surfaceMode: number;
   showAxes: boolean;
   showBox: boolean;
   coeffs: Float32Array;
 };
 
-const HALF = 3.0;             // muss mit Shader-Uniform uHalf und Boxgeometrie übereinstimmen
+const HALF = 3.0;
 const EDGE_THICK = 0.03;
 
-// --- Hilfsfunktionen ---------------------------------------------------------
-
+// --- helpers ---------------------------------------------------
 function resizeCanvas(canvas: HTMLCanvasElement){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -106,15 +103,13 @@ function createCube(gl: GL, prog: WebGLProgram){
   return { vao, iboSize: i.length };
 }
 
-// --- Three.js Kamera-/Controls-Setup ----------------------------------------
-
+// --- three camera/controls ---------------
 function makePerspective(aspect: number) {
   const cam = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  cam.position.set(10, 10, 15);   
+  cam.position.set(10, 10, 15);
   cam.lookAt(0, 0, 0);
   return cam;
 }
-
 function makeControls(camera: THREE.Camera, canvas: HTMLCanvasElement){
   const controls = new OrbitControls(camera as any, canvas);
   controls.enableDamping = true;
@@ -127,8 +122,7 @@ function makeControls(camera: THREE.Camera, canvas: HTMLCanvasElement){
   return controls;
 }
 
-// --- App-Setup ---------------------------------------------------------------
-
+// --- init --------------------------------
 function init(): Ctx {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
   resizeCanvas(canvas);
@@ -154,7 +148,7 @@ function init(): Ctx {
     uShowBox: gl.getUniformLocation(prog, 'uShowBox'),
     uHalf: gl.getUniformLocation(prog, 'uHalf'),
     uEdgeThickness: gl.getUniformLocation(prog, 'uEdgeThickness'),
-    viewMode: 1,               // Start: Perspective
+    viewMode: 1,
     surfaceMode: 1,
     showAxes: true,
     showBox: true,
@@ -166,25 +160,24 @@ function init(): Ctx {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
 
-  // Resize -> Kamera anpassen
-window.addEventListener('resize', () => {
-  resizeCanvas(canvas);
-  const aspect = canvas.width / canvas.height;
-  if (ctx.viewMode === 2 && ctx.camera instanceof THREE.OrthographicCamera) {
-    // NICHT mehr ORTHO_BASE_SIZE erzwingen — aktuelle Halbhöhe behalten
-    const halfHeight = (ctx.camera.top - ctx.camera.bottom) * 0.5;
-    ctx.camera.left   = -halfHeight * aspect;
-    ctx.camera.right  =  halfHeight * aspect;
-    ctx.camera.top    =  halfHeight;
-    ctx.camera.bottom = -halfHeight;
-    ctx.camera.updateProjectionMatrix();
-  } else if (ctx.camera instanceof THREE.PerspectiveCamera) {
-    ctx.camera.aspect = aspect;
-    ctx.camera.updateProjectionMatrix();
-  }
-});
+  // resize
+  window.addEventListener('resize', () => {
+    resizeCanvas(canvas);
+    const aspect = canvas.width / canvas.height;
+    if (ctx.viewMode === 2 && ctx.camera instanceof THREE.OrthographicCamera) {
+      const halfHeight = (ctx.camera.top - ctx.camera.bottom) * 0.5;
+      ctx.camera.left   = -halfHeight * aspect;
+      ctx.camera.right  =  halfHeight * aspect;
+      ctx.camera.top    =  halfHeight;
+      ctx.camera.bottom = -halfHeight;
+      ctx.camera.updateProjectionMatrix();
+    } else if (ctx.camera instanceof THREE.PerspectiveCamera) {
+      ctx.camera.aspect = aspect;
+      ctx.camera.updateProjectionMatrix();
+    }
+  });
 
-  // Messaging vom Widget
+  // widget messaging
   window.addEventListener('message', (e: MessageEvent<any>) => {
     const d = e.data || {};
     if (d.type === 'coeffs' && Array.isArray(d.coeffs) && d.coeffs.length === 20){
@@ -200,7 +193,6 @@ window.addEventListener('resize', () => {
     }
   });
 
-  // ready -> Widget
   try { window.parent?.postMessage({ type: 'ready' }, '*'); } catch {}
 
   return ctx;
@@ -210,18 +202,13 @@ function switchCamera(ctx: Ctx, newMode: number){
   const canvas = ctx.gl.canvas as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height;
 
-  // aktuelle Pose sichern
   const oldCam = ctx.camera;
   const oldTarget = ctx.controls.target.clone();
   const oldPos = (oldCam as any).position.clone();
-
-  // Distanz zum Target (für Größen-/FOV-Umrechnung)
   const dist = oldPos.clone().sub(oldTarget).length();
 
-  // Alte Controls entsorgen
   ctx.controls.dispose();
 
-  // Hilf: Ortho-Halbhöhe aus alter Cam bestimmen
   const getHalfHeightFromOld = () => {
     if (oldCam instanceof THREE.PerspectiveCamera) {
       const fovRad = THREE.MathUtils.degToRad(oldCam.fov);
@@ -230,8 +217,6 @@ function switchCamera(ctx: Ctx, newMode: number){
       return (oldCam.top - oldCam.bottom) * 0.5;
     }
   };
-
-  // Hilf: FOV aus alter Cam bestimmen (falls vorher Ortho)
   const getFovFromOld = () => {
     if (oldCam instanceof THREE.OrthographicCamera) {
       const hh = (oldCam.top - oldCam.bottom) * 0.5;
@@ -245,7 +230,6 @@ function switchCamera(ctx: Ctx, newMode: number){
   let newCam: THREE.PerspectiveCamera | THREE.OrthographicCamera;
 
   if (newMode === 2) {
-    // -> ORTHOGRAPHIC: Halbhöhe aus alter Cam ableiten
     const halfHeight = getHalfHeightFromOld();
     newCam = new THREE.OrthographicCamera(
       -halfHeight * aspect, +halfHeight * aspect,
@@ -253,17 +237,14 @@ function switchCamera(ctx: Ctx, newMode: number){
       0.1, 100
     );
   } else {
-    // -> PERSPECTIVE (gilt auch für Stereo-Mode 3)
     const fovDeg = getFovFromOld();
     newCam = new THREE.PerspectiveCamera(fovDeg, aspect, 0.1, 100);
   }
 
-  // Pose + Blickpunkt übernehmen
   newCam.position.copy(oldPos);
   newCam.lookAt(oldTarget);
   newCam.updateProjectionMatrix();
 
-  // OrbitControls neu, Target behalten
   ctx.camera = newCam;
   ctx.controls = makeControls(ctx.camera, canvas);
   ctx.controls.target.copy(oldTarget);
@@ -272,15 +253,12 @@ function switchCamera(ctx: Ctx, newMode: number){
   ctx.viewMode = newMode;
 }
 
-
-// --- Render-Loop -------------------------------------------------------------
-
+// --- draw/loop ---------------------------
 function draw(ctx: Ctx){
   const { gl } = ctx;
   gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // gemeinsame Einstellungen
   gl.useProgram(ctx.prog);
   gl.bindVertexArray(ctx.vao);
   if (ctx.uShowBox) gl.uniform1i(ctx.uShowBox, ctx.showBox ? 1 : 0);
@@ -290,35 +268,27 @@ function draw(ctx: Ctx){
   gl.uniform1fv(ctx.uCoeffs, ctx.coeffs);
   gl.uniform1i(ctx.uOrthographic, (ctx.viewMode===2) ? 1 : 0);
 
-  const baseScale = 1.6;  // Objekt-Skalierung; Zoom übernimmt jetzt die Kamera
+  const baseScale = 1.6;
 
   const applyPass = (eyeOffsetX: number, colorMask?: [boolean,boolean,boolean,boolean]) => {
     if (colorMask) gl.colorMask(...colorMask); else gl.colorMask(true,true,true,true);
 
-    // Controls (Damping etc.)
     ctx.controls.update();
-
-    // Kamera aktualisieren
     ctx.camera.updateMatrixWorld(true);
 
-    // Für Stereo leicht versetzen (einfacher Screen-X Shift)
     if (eyeOffsetX !== 0) {
       ctx.camera.position.x -= eyeOffsetX;
       ctx.camera.updateMatrixWorld(true);
     }
 
-    // Projection-Matrix (direkt aus Three.js)
     const projArr = new Float32Array((ctx.camera.projectionMatrix as THREE.Matrix4).elements);
     gl.uniformMatrix4fv(ctx.uProjection, false, projArr);
 
-    // View-Matrix (inverse Weltmatrix der Kamera)
     const viewArr = new Float32Array((ctx.camera.matrixWorldInverse as THREE.Matrix4).elements);
 
-    // Model-Matrix (nur Skalierung)
     const model = mat4.create();
     mat4.scale(model, model, [baseScale, baseScale, baseScale]);
 
-    // MV & Inverse(MV)
     const view = mat4.clone(viewArr as unknown as Float32Array);
     const mv = mat4.create();
     mat4.multiply(mv, view, model);
@@ -329,11 +299,8 @@ function draw(ctx: Ctx){
 
     gl.uniform1i(ctx.uShowAxes, ctx.showAxes ? 1 : 0);
 
-
-    // draw
     gl.drawElements(gl.TRIANGLES, ctx.iboSize, gl.UNSIGNED_SHORT, 0);
 
-    // Stereo-Offset rückgängig machen
     if (eyeOffsetX !== 0) {
       ctx.camera.position.x += eyeOffsetX;
       ctx.camera.updateMatrixWorld(true);
@@ -341,10 +308,9 @@ function draw(ctx: Ctx){
   };
 
   if (ctx.viewMode === 3) {
-    // Stereo (Rot/Cyan)
-    applyPass(-0.12, [true,false,false,true]);        // links rot
+    applyPass(-0.12, [true,false,false,true]);
     gl.clear(gl.DEPTH_BUFFER_BIT);
-    applyPass(+0.12, [false,true,true,true]);        // rechts cyan
+    applyPass(+0.12, [false,true,true,true]);
     gl.colorMask(true,true,true,true);
   } else {
     applyPass(0.0);
@@ -358,8 +324,7 @@ function loop(ctx: Ctx){
   requestAnimationFrame(() => loop(ctx));
 }
 
-// --- Start -------------------------------------------------------------------
-
+// --- boot --------------------------------
 window.addEventListener('load', () => {
   const ctx = init();
   loop(ctx);

@@ -1,15 +1,15 @@
 #version 300 es
 precision highp float;
+precision highp int;
 
-layout(location=0) in vec3 aPosition;
+in vec3 aPosition;
 
 uniform mat4 uModelView;
 uniform mat4 uProjection;
 
-out vec3 vUV;
+out vec3 vUV;   // Objektkoordinate fürs Ray-Setup im FS
 
 void main() {
-    vec4 pos = vec4(aPosition, 1.0);
-    vUV = pos.xyz;
-    gl_Position = uProjection * uModelView * pos;
+  vUV = aPosition;                        // unverändert im Objektraum weiterreichen
+  gl_Position = uProjection * uModelView * vec4(aPosition, 1.0);
 }

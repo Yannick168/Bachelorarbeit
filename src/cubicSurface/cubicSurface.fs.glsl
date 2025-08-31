@@ -5,103 +5,130 @@ in vec3 vUV;
 
 uniform mat4  uModelInverse;
 uniform int   uOrthographic;
-uniform int   uSurface;          // bleibt vorhanden, falls genutzt
-uniform float uCoeffs[20];       // deine Kubik-Flächen-Koeffizienten
+uniform int   uSurface;
+uniform float uCoeffs[20];
 
-uniform bool  uShowAxes;         // <<< NEU: Achsen an/aus
-uniform bool  uShowBox;          // (bestehend) Box-Kanten zeigen
-uniform float uHalf;             // halbe Würfelkantenlänge
-uniform float uEdgeThickness;    // Kanten-/Linienstärke in Objekt-Einheiten
+uniform bool  uShowAxes;
+uniform bool  uShowBox;
+uniform float uHalf;
+uniform float uEdgeThickness;
 
 layout(location=0) out vec4 fColor;
 
-/* =========================================================
-   Bestehende Hilfsfunktionen (unverändert gelassen)
-   ========================================================= */
+const float INF = 1.0e30;
+const float EPS = 1e-4;
 
-float sgn(float x) {
-  return x < 0.0f ? -1.0f : 1.0f;
+// ---------------------------------------------------------
+// robust quadratic & cubic
+// ---------------------------------------------------------
+float cbrt_safe(float x) { return (x >= 0.0) ? pow(x, 1.0/3.0) : -pow(-x, 1.0/3.0); }
+
+void sort3(inout vec3 v) {
+  if (v.x > v.y) { float t=v.x; v.x=v.y; v.y=t; }
+  if (v.y > v.z) { float t=v.y; v.y=v.z; v.z=t; }
+  if (v.x > v.y) { float t=v.x; v.x=v.y; v.y=t; }
 }
 
-int quadratic(float A, float B, float C, out vec2 res) {
-  float x1, x2;
-  float b = -0.5f * B;
-  float q = b * b - A * C;
-  if(q < 0.0f)
-    return 0;
-  float r = b + sgn(b) * sqrt(q);
-  if(r == 0.0f) {
-    x1 = C / A;
-    x2 = -x1;
-  } else {
-    x1 = C / r;
-    x2 = r / A;
+int quadratic(float A, float B, float C, out vec2 r) {
+  float scale = max(max(abs(A), abs(B)), abs(C));
+  float eps = 1e-6 * (scale + 1.0);
+  r = vec2(INF);
+
+  if (abs(A) < eps) {
+    if (abs(B) < eps) return 0;   // degeneriert
+    r.x = -C / B;                  // linear
+    return 1;
   }
-  res = vec2(x1, x2);
+
+  float disc = B*B - 4.0*A*C;
+  if (disc < -eps) return 0;
+
+  if (abs(disc) <= eps) {
+    r.x = -0.5*B / A;
+    return 1;
+  }
+
+  float s = sqrt(max(disc, 0.0));
+  float q = -0.5 * (B + sign(B) * s);
+  float r1 = q / A;
+  float r2 = C / q;
+  if (r1 <= r2) r = vec2(r1, r2); else r = vec2(r2, r1);
   return 2;
 }
 
-void eval(
-  float X,
-  float A,
-  float B,
-  float C,
-  float D,
-  out float Q,
-  out float Q1,
-  out float B1,
-  out float C2
-) {
-  float q0 = A * X;
-  B1 = q0 + B;
-  C2 = B1 * X + C;
-  Q1 = (q0 + B1) * X + C2;
-  Q = C2 * X + D;
-}
-
-// Solve: Ax^3 + Bx^2 + Cx + D == 0
 int cubic(float A, float B, float C, float D, out vec3 res) {
-  float X, b1, c2;
-  if (A == 0.0f) {
-    X = 1e8f;
-    A = B;
-    b1 = C;
-    c2 = D;
-  } else if (D == 0.0f) {
-    X = 0.0f;
-    b1 = B;
-    c2 = C;
-  } else {
-    X = -(B / A) / 3.0f;
-    float t, r, s, q, dq, x0;
-    eval(X, A, B, C, D, q, dq, b1, c2);
-    t = q / A;
-    r = pow(abs(t), 1.0f / 3.0f);
-    s = sgn(t);
-    t = -dq / A;
-    if (t > 0.0f)
-      r = 1.324718f * max(r, sqrt(t));
-    x0 = X - s * r;
-    if (x0 != X) {
-      for(int i = 0; i < 6; i++) {
-        X = x0;
-        eval(X, A, B, C, D, q, dq, b1, c2);
-        if (dq == 0.0f)
-          break;
-        x0 -= (q / dq);
-      }
-      if (abs(A) * X * X > abs(D / X)) {
-        c2 = -D / X;
-        b1 = (c2 - C) / X;
-      }
+  float scale = max(max(abs(A), abs(B)), max(abs(C), abs(D)));
+  float eps = 1e-6 * (scale + 1.0);
+  res = vec3(INF);
+
+  // Fast-Quadratik (t^3 ~ 0)
+  if (abs(A) < eps) {
+    vec2 q; int nq = quadratic(B, C, D, q);
+    if (nq == 2) res = vec3(q.x, q.y, INF);
+    else if (nq == 1) res = vec3(q.x, INF, INF);
+    return nq;
+  }
+
+  // t ~ 0
+  if (abs(D) < eps) {
+    vec2 q; int nq = quadratic(A, B, C, q);
+    if (nq == 2) res = vec3(0.0, q.x, q.y);
+    else if (nq == 1) res = vec3(0.0, q.x, INF);
+    else res = vec3(0.0, INF, INF);
+    sort3(res);
+    return 1 + nq;
+  }
+
+  // monisch: t^3 + a t^2 + b t + c = 0
+  float a = B / A, b = C / A, c = D / A;
+
+  // depressiert: y^3 + p y + q = 0, t = y - a/3
+  float a3 = a / 3.0;
+  float p  = b - a*a/3.0;
+  float q  = 2.0*a*a*a/27.0 - a*b/3.0 + c;
+
+  float half_q  = 0.5 * q;
+  float third_p = p / 3.0;
+  float disc = half_q*half_q + third_p*third_p*third_p;
+
+  if (disc > eps) {
+    float s = sqrt(disc);
+    float u = cbrt_safe(-half_q + s);
+    float v = cbrt_safe(-half_q - s);
+    res = vec3((u + v) - a3, INF, INF);
+    return 1;
+  }
+
+  if (abs(disc) <= eps) {
+    if (abs(p) <= eps && abs(q) <= eps) {
+      res = vec3(-a3, INF, INF);
+      return 1;
+    } else {
+      float u = cbrt_safe(-half_q);
+      float t1 =  2.0*u - a3;
+      float t2 = -u     - a3;
+      if (t1 <= t2) res = vec3(t1, t2, INF); else res = vec3(t2, t1, INF);
+      return 2;
     }
   }
-  res.x = X;
-  return 1 + quadratic(A, b1, c2, res.yz);
+
+  // drei reelle
+  float r = 2.0 * sqrt(-third_p);
+  float arg = clamp(-half_q / sqrt(-third_p*third_p*third_p), -1.0, 1.0);
+  float phi = acos(arg);
+
+  float t1 =  r * cos(        phi / 3.0) - a3;
+  float t2 =  r * cos((phi + 2.0*3.14159265) / 3.0) - a3;
+  float t3 =  r * cos((phi + 4.0*3.14159265) / 3.0) - a3;
+
+  res = vec3(t1, t2, t3);
+  sort3(res);
+  return 3;
 }
 
-const float EPS = 1e-4;
-
+// ---------------------------------------------------------
+// ray / aabb
+// ---------------------------------------------------------
 bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
   vec3 invD = 1.0 / rd;
   vec3 t0 = (vec3(-h) - ro) * invD;
@@ -113,6 +140,9 @@ bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
   return tExit > max(tEnter, 0.0);
 }
 
+// ---------------------------------------------------------
+// gradient / normals
+// ---------------------------------------------------------
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c300 = coeffs[0];
   float c030 = coeffs[1];
@@ -134,15 +164,21 @@ vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c010 = coeffs[17];
   float c001 = coeffs[18];
   float c000 = coeffs[19];
-  vec3 n;
 
-  n.x = c100 + c101*p.z + c102*pow(p.z, 2.0) + c110*p.y + c111*p.y*p.z + c120*pow(p.y, 2.0) + 2.0*c200*p.x + 2.0*c201*p.x*p.z + 2.0*c210*p.x*p.y + 3.0*c300*pow(p.x, 2.0);
-  n.y = c010 + c011*p.z + c012*pow(p.z, 2.0) + 2.0*c020*p.y + 2.0*c021*p.y*p.z + 3.0*c030*pow(p.y, 2.0) + c110*p.x + c111*p.x*p.z + 2.0*c120*p.x*p.y + c210*pow(p.x, 2.0);
-  n.z = c001 + 2.0*c002*p.z + 3.0*c003*pow(p.z, 2.0) + c011*p.y + 2.0*c012*p.y*p.z + c021*pow(p.y, 2.0) + c101*p.x + 2.0*c102*p.x*p.z + c111*p.x*p.y + c201*pow(p.x, 2.0);
+  vec3 n;
+  n.x = c100 + c101*p.z + c102*pow(p.z, 2.0) + c110*p.y + c111*p.y*p.z + c120*pow(p.y, 2.0)
+      + 2.0*c200*p.x + 2.0*c201*p.x*p.z + 2.0*c210*p.x*p.y + 3.0*c300*pow(p.x, 2.0);
+  n.y = c010 + c011*p.z + c012*pow(p.z, 2.0) + 2.0*c020*p.y + 2.0*c021*p.y*p.z + 3.0*c030*pow(p.y, 2.0)
+      + c110*p.x + c111*p.x*p.z + 2.0*c120*p.x*p.y + c210*pow(p.x, 2.0);
+  n.z = c001 + 2.0*c002*p.z + 3.0*c003*pow(p.z, 2.0) + c011*p.y + 2.0*c012*p.y*p.z + c021*pow(p.y, 2.0)
+      + c101*p.x + 2.0*c102*p.x*p.z + c111*p.x*p.y + c201*pow(p.x, 2.0);
 
   return normalize(n);
 }
 
+// ---------------------------------------------------------
+// build polynomial along ray & intersect
+// ---------------------------------------------------------
 float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c300 = coeffs[0];
   float c030 = coeffs[1];
@@ -167,12 +203,14 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
 
   float a[4];
 
+  // t^3
   a[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
     c030*pow(rd.y,3.0) + c102*rd.x*pow(rd.z,2.0) + c111*rd.x*rd.y*rd.z +
     c120*rd.x*pow(rd.y,2.0) + c201*pow(rd.x,2.0)*rd.z + c210*pow(rd.x,2.0)*rd.y +
     c300*pow(rd.x,3.0);
 
+  // t^2
   a[2] =
     ro.x*c102*pow(rd.z,2.0) + ro.x*c111*rd.y*rd.z + ro.x*c120*pow(rd.y,2.0) +
     2.0*ro.x*c201*rd.x*rd.z + 2.0*ro.x*c210*rd.x*rd.y + 3.0*ro.x*c300*pow(rd.x,2.0) +
@@ -183,6 +221,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     c002*pow(rd.z,2.0) + c011*rd.y*rd.z + c020*pow(rd.y,2.0) +
     c101*rd.x*rd.z + c110*rd.x*rd.y + c200*pow(rd.x,2.0);
 
+  // t^1
   a[1] =
     pow(ro.x,2.0)*c201*rd.z + pow(ro.x,2.0)*c210*rd.y + 3.0*pow(ro.x,2.0)*c300*rd.x +
     ro.x*ro.y*c111*rd.z + 2.0*ro.x*ro.y*c120*rd.y + 2.0*ro.x*ro.y*c210*rd.x +
@@ -195,6 +234,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     2.0*ro.z*c002*rd.z + ro.z*c011*rd.y + ro.z*c101*rd.x +
     c001*rd.z + c010*rd.y + c100*rd.x;
 
+  // t^0
   a[0] =
     pow(ro.x,3.0)*c300 + pow(ro.x,2.0)*ro.y*c210 + pow(ro.x,2.0)*ro.z*c201 + pow(ro.x,2.0)*c200 +
     ro.x*pow(ro.y,2.0)*c120 + ro.x*ro.y*ro.z*c111 + ro.x*ro.y*c110 +
@@ -208,24 +248,23 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   tEnter = max(tEnter, EPS);
 
   vec3 res;
-  float t = 1e20f;
+  float t = INF;
   int n = cubic(a[3], a[2], a[1], a[0], res);
 
   for (int i = 0; i < n; ++i) {
     float ti = res[i];
-    if (ti < 0.0)            continue;
+    if (ti < 0.0)               continue;
     if (ti < tEnter || ti > tExit) continue;
     t = min(t, ti);
   }
 
-  if (t == 1e20f) return -1.0f;
+  if (t == INF) return -1.0;
   return t;
 }
 
-/* =========================================================
-   Box-Kanten (bestehende Darstellung)
-   ========================================================= */
-
+// ---------------------------------------------------------
+// box edges & axes-as-quadrics
+// ---------------------------------------------------------
 float edgeDistance(vec3 p, float r) {
   vec3 d = abs(abs(p) - r);
   float dXY = max(d.x, d.y);
@@ -245,79 +284,61 @@ float edgeDistance(vec3 p, float r) {
   return min(min(eXY, eXZ), eYZ);
 }
 
-/* =========================================================
-   NEU: Achsen-Koeffizienten als Quadriken in 20er-Cubic-Array
-   Index-Layout (aus deinem Code):
-   [ c300,c030,c003,c210,c201,c021,c012,c120,c102,c111,
-     c200,c020,c002,c101,c110,c011,c100,c010,c001,c000 ]
-   ========================================================= */
+void zeroCoeffs(out float c[20]) { for (int i=0;i<20;i++) c[i] = 0.0; }
 
-// alle 20 Einträge auf 0
-void zeroCoeffs(out float c[20]) {
-  for (int i=0;i<20;i++) c[i] = 0.0;
-}
-
-// X-Achse: y^2 + z^2 - r^2 = 0  (unabhängig von x)
 void axisCoeffsX(float r, out float c[20]) {
   zeroCoeffs(c);
-  c[11] = 1.0;        // c020 (y^2)
-  c[12] = 1.0;        // c002 (z^2)
-  c[19] = -r*r;       // c000 (Konstante)
+  c[11] = 1.0; // y^2
+  c[12] = 1.0; // z^2
+  c[19] = -r*r;
 }
-
-// Y-Achse: x^2 + z^2 - r^2 = 0
 void axisCoeffsY(float r, out float c[20]) {
   zeroCoeffs(c);
-  c[10] = 1.0;        // c200 (x^2)
-  c[12] = 1.0;        // c002 (z^2)
+  c[10] = 1.0; // x^2
+  c[12] = 1.0; // z^2
   c[19] = -r*r;
 }
-
-// Z-Achse: x^2 + y^2 - r^2 = 0
 void axisCoeffsZ(float r, out float c[20]) {
   zeroCoeffs(c);
-  c[10] = 1.0;        // c200 (x^2)
-  c[11] = 1.0;        // c020 (y^2)
+  c[10] = 1.0; // x^2
+  c[11] = 1.0; // y^2
   c[19] = -r*r;
 }
 
-void copyCoeffs(in float src[20], out float dst[20]) {
-  for (int i=0;i<20;i++) dst[i] = src[i];
-}
-
-/* =========================================================
-   main
-   ========================================================= */
+// ---------------------------------------------------------
+// main
+// ---------------------------------------------------------
 void main() {
-
-  // Box-Kanten (falls aktiv) — früher Early-Return
+  // box edges (overlay)
   if (uShowBox) {
     float d  = edgeDistance(vUV, uHalf);
     float aa = fwidth(d);
-    float m  = 1.0 - smoothstep(uEdgeThickness - aa,
-                                uEdgeThickness + aa, d);
+    float m  = 1.0 - smoothstep(uEdgeThickness - aa, uEdgeThickness + aa, d);
     if (m > 0.0) {
-      fColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+      fColor = vec4(0.0, 0.0, 0.0, 1.0);
       return;
     }
   }
 
-  // Ray
+  // stable ray setup in object space
   vec3 ro = vUV;
-  vec3 rd = (uOrthographic == 1) ? -uModelInverse[2].xyz
-                                 : vUV - uModelInverse[3].xyz;
-  rd = normalize(rd);
-  ro += 1e-4 * rd;
 
-  // 1) Schnitt mit deiner (aktuellen) Kubikfläche
+  // camera at origin in camera space -> transform to object space (w=1)
+  vec3 camPos = (uModelInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+
+  // camera -Z direction in camera space -> object space (w=0)
+  vec3 rd = (uOrthographic == 1)
+    ? normalize((uModelInverse * vec4(0.0, 0.0, -1.0, 0.0)).xyz)
+    : normalize(ro - camPos);
+
+  ro += EPS * rd;
+
   float tCubic = cubicSurfaceIntersect(ro, rd, uCoeffs);
 
-  // 2) Achsen als Quadriken in 20er-Array kodieren und mit
-  //    derselben Intersect-Funktion schneiden
   float radius = max(uEdgeThickness, 0.02);
   float tX = -1.0, tY = -1.0, tZ = -1.0;
-
   float cx[20]; float cy[20]; float cz[20];
+
   if (uShowAxes) {
     axisCoeffsX(radius, cx);
     axisCoeffsY(radius, cy);
@@ -327,7 +348,6 @@ void main() {
     tZ = cubicSurfaceIntersect(ro, rd, cz);
   }
 
-  // 3) Nähesten Treffer wählen
   bool haveCubic = (tCubic >= 0.0);
   bool haveX = (tX >= 0.0);
   bool haveY = (tY >= 0.0);
@@ -337,7 +357,7 @@ void main() {
     discard;
   }
 
-  float tMin = 1e20;
+  float tMin = INF;
   int   which = -1; // 0=X,1=Y,2=Z, 3=Cubic
 
   if (haveX && tX < tMin) { tMin = tX; which = 0; }
@@ -346,8 +366,7 @@ void main() {
   if (haveCubic && tCubic < tMin) { tMin = tCubic; which = 3; }
 
   vec3 p = ro + tMin * rd;
-  vec3 n;
-  vec3 rgb;
+  vec3 n, rgb;
 
   if (which == 0) {
     n   = normalize(cubicSurfaceNormal(p, cx));
@@ -358,12 +377,12 @@ void main() {
   } else if (which == 2) {
     n   = normalize(cubicSurfaceNormal(p, cz));
     rgb = vec3(0.0, 0.0, 1.0);
-  } else { // 3: deine Kubikfläche
+  } else {
     n   = normalize(cubicSurfaceNormal(p, uCoeffs));
-    rgb = vec3(1.0, 0.1, 0.1); // deine Base-Farbe
+    rgb = vec3(1.0, 0.1, 0.1);
   }
 
-  // Headlight-Shading
+  // Headlight shading (view-abhängig, wie gewünscht)
   float shade = abs(dot(rd, n));
   rgb *= max(shade, 0.0);
 
