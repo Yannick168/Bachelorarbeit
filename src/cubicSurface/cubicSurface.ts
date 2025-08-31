@@ -175,20 +175,22 @@ function init(): Ctx {
   gl.enable(gl.CULL_FACE);
 
   // Resize -> Kamera anpassen
-  window.addEventListener('resize', () => {
-    resizeCanvas(canvas);
-    const aspect = canvas.width / canvas.height;
-    if (ctx.viewMode === 2 && ctx.camera instanceof THREE.OrthographicCamera) {
-      ctx.camera.left   = -ORTHO_BASE_SIZE * aspect;
-      ctx.camera.right  =  ORTHO_BASE_SIZE * aspect;
-      ctx.camera.top    =  ORTHO_BASE_SIZE;
-      ctx.camera.bottom = -ORTHO_BASE_SIZE;
-      ctx.camera.updateProjectionMatrix();
-    } else if (ctx.camera instanceof THREE.PerspectiveCamera) {
-      ctx.camera.aspect = aspect;
-      ctx.camera.updateProjectionMatrix();
-    }
-  });
+window.addEventListener('resize', () => {
+  resizeCanvas(canvas);
+  const aspect = canvas.width / canvas.height;
+  if (ctx.viewMode === 2 && ctx.camera instanceof THREE.OrthographicCamera) {
+    // NICHT mehr ORTHO_BASE_SIZE erzwingen — aktuelle Halbhöhe behalten
+    const halfHeight = (ctx.camera.top - ctx.camera.bottom) * 0.5;
+    ctx.camera.left   = -halfHeight * aspect;
+    ctx.camera.right  =  halfHeight * aspect;
+    ctx.camera.top    =  halfHeight;
+    ctx.camera.bottom = -halfHeight;
+    ctx.camera.updateProjectionMatrix();
+  } else if (ctx.camera instanceof THREE.PerspectiveCamera) {
+    ctx.camera.aspect = aspect;
+    ctx.camera.updateProjectionMatrix();
+  }
+});
 
   // Messaging vom Widget
   window.addEventListener('message', (e: MessageEvent<any>) => {
@@ -216,17 +218,68 @@ function switchCamera(ctx: Ctx, newMode: number){
   const canvas = ctx.gl.canvas as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height;
 
-  // alte Controls entsorgen
+  // aktuelle Pose sichern
+  const oldCam = ctx.camera;
+  const oldTarget = ctx.controls.target.clone();
+  const oldPos = (oldCam as any).position.clone();
+
+  // Distanz zum Target (für Größen-/FOV-Umrechnung)
+  const dist = oldPos.clone().sub(oldTarget).length();
+
+  // Alte Controls entsorgen
   ctx.controls.dispose();
 
+  // Hilf: Ortho-Halbhöhe aus alter Cam bestimmen
+  const getHalfHeightFromOld = () => {
+    if (oldCam instanceof THREE.PerspectiveCamera) {
+      const fovRad = THREE.MathUtils.degToRad(oldCam.fov);
+      return Math.tan(fovRad * 0.5) * Math.max(dist, 1e-4);
+    } else {
+      return (oldCam.top - oldCam.bottom) * 0.5;
+    }
+  };
+
+  // Hilf: FOV aus alter Cam bestimmen (falls vorher Ortho)
+  const getFovFromOld = () => {
+    if (oldCam instanceof THREE.OrthographicCamera) {
+      const hh = (oldCam.top - oldCam.bottom) * 0.5;
+      const fovRad = 2 * Math.atan(Math.max(hh, 1e-4) / Math.max(dist, 1e-4));
+      return THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(fovRad), 10, 75);
+    } else {
+      return (oldCam as THREE.PerspectiveCamera).fov;
+    }
+  };
+
+  let newCam: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+
   if (newMode === 2) {
-    ctx.camera = makeOrtho(aspect);
+    // -> ORTHOGRAPHIC: Halbhöhe aus alter Cam ableiten
+    const halfHeight = getHalfHeightFromOld();
+    newCam = new THREE.OrthographicCamera(
+      -halfHeight * aspect, +halfHeight * aspect,
+      +halfHeight, -halfHeight,
+      0.1, 100
+    );
   } else {
-    ctx.camera = makePerspective(aspect);
+    // -> PERSPECTIVE (gilt auch für Stereo-Mode 3)
+    const fovDeg = getFovFromOld();
+    newCam = new THREE.PerspectiveCamera(fovDeg, aspect, 0.1, 100);
   }
+
+  // Pose + Blickpunkt übernehmen
+  newCam.position.copy(oldPos);
+  newCam.lookAt(oldTarget);
+  newCam.updateProjectionMatrix();
+
+  // OrbitControls neu, Target behalten
+  ctx.camera = newCam;
   ctx.controls = makeControls(ctx.camera, canvas);
+  ctx.controls.target.copy(oldTarget);
+  ctx.controls.update();
+
   ctx.viewMode = newMode;
 }
+
 
 // --- Render-Loop -------------------------------------------------------------
 

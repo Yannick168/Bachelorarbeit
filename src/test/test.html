@@ -57,10 +57,9 @@
                     </div>
 
                     <div class="col-12 col-md-3">
-                      <div class="form-check mt-4">
-                        <input class="form-check-input" type="checkbox" id="showAxes" checked />
-                        <label class="form-check-label" for="showAxes">show Axes</label>
-                      </div>
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="showAxes" checked="checked" /> <label class="form-check-label" for="showAxes">show Axes</label>
+                        </div>
                     </div>
 
                     <div class="col-12 col-md-3">
@@ -68,8 +67,6 @@
                             <input class="form-check-input" type="checkbox" id="showBox" checked="checked" /> <label class="form-check-label" for="showBox">show Volumecube</label>
                         </div>
                     </div>
-
-
                 </div>
             </div>
             <!-- Sliders -->
@@ -361,6 +358,7 @@ function initApp(){
     sendAll();
     updateFormula();
   });
+  document.getElementById("showAxes").addEventListener("change", sendAll); // <— NEU
   document.getElementById("showBox").addEventListener("change", sendAll);
 
   frame.addEventListener("load", () => setTimeout(() => { sendAll(); updateFormula(); }, 150));
