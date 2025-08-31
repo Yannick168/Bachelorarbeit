@@ -163,14 +163,8 @@ function init(): Ctx {
   };
 
   gl.clearColor(1,1,1,1);
-  // Pass 1: Backfaces
+  gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
-  gl.cullFace(gl.FRONT);
-  gl.drawElements(gl.TRIANGLES, ctx.iboSize, gl.UNSIGNED_SHORT, 0);
-
-  // Pass 2: Frontfaces
-  gl.cullFace(gl.BACK);
-  gl.drawElements(gl.TRIANGLES, ctx.iboSize, gl.UNSIGNED_SHORT, 0);
 
   // Resize -> Kamera anpassen
 window.addEventListener('resize', () => {
