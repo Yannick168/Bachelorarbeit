@@ -1,4 +1,4 @@
-import"./modulepreload-polyfill-B5Qt9EMX.js";import{O as A}from"./OrbitControls-BGrLWSQq.js";import{P as p,O as x,n as h}from"./three.module-Cv04BlQJ.js";import{c as m,s as g,b as E,m as M,i as C}from"./mat4-DI7TqCbi.js";const S=`#version 300 es\r
+import"./modulepreload-polyfill-B5Qt9EMX.js";import{O as A}from"./OrbitControls-BGrLWSQq.js";import{P as p,O as x,n as h}from"./three.module-Cv04BlQJ.js";import{c as m,s as E,b as g,m as M,i as S}from"./mat4-DI7TqCbi.js";const C=`#version 300 es\r
 precision highp float;\r
 \r
 layout(location=0) in vec3 aPosition;\r
@@ -118,16 +118,61 @@ int cubic(float A, float B, float C, float D, out vec3 res) {\r
 \r
 const float EPS = 1e-4;\r
 \r
-bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {\r
-  vec3 invD = 1.0 / rd;\r
-  vec3 t0 = (vec3(-h) - ro) * invD;\r
-  vec3 t1 = (vec3( h) - ro) * invD;\r
-  vec3 tmin = min(t0, t1);\r
-  vec3 tmax = max(t0, t1);\r
-  tEnter = max(max(tmin.x, tmin.y), tmin.z);\r
-  tExit  = min(min(tmax.x, tmax.y), tmax.z);\r
-  return tExit > max(tEnter, 0.0);\r
+bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit)\r
+{\r
+  const float INF = 1e30;\r
+  const float EPS_DIR = 1e-8;\r
+\r
+  float tmin = -INF;\r
+  float tmax =  INF;\r
+\r
+  // X\r
+  if (abs(rd.x) < EPS_DIR) {\r
+    if (ro.x < -h || ro.x > h) return false; // parallel & außerhalb\r
+    // sonst: keine Einschränkung durch x-Slab\r
+  } else {\r
+    float ood = 1.0 / rd.x;\r
+    float t0 = (-h - ro.x) * ood;\r
+    float t1 = ( h - ro.x) * ood;\r
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }\r
+    tmin = max(tmin, t0);\r
+    tmax = min(tmax, t1);\r
+    if (tmax < tmin) return false;\r
+  }\r
+\r
+  // Y\r
+  if (abs(rd.y) < EPS_DIR) {\r
+    if (ro.y < -h || ro.y > h) return false;\r
+  } else {\r
+    float ood = 1.0 / rd.y;\r
+    float t0 = (-h - ro.y) * ood;\r
+    float t1 = ( h - ro.y) * ood;\r
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }\r
+    tmin = max(tmin, t0);\r
+    tmax = min(tmax, t1);\r
+    if (tmax < tmin) return false;\r
+  }\r
+\r
+  // Z\r
+  if (abs(rd.z) < EPS_DIR) {\r
+    if (ro.z < -h || ro.z > h) return false;\r
+  } else {\r
+    float ood = 1.0 / rd.z;\r
+    float t0 = (-h - ro.z) * ood;\r
+    float t1 = ( h - ro.z) * ood;\r
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }\r
+    tmin = max(tmin, t0);\r
+    tmax = min(tmax, t1);\r
+    if (tmax < tmin) return false;\r
+  }\r
+\r
+  tEnter = tmin;\r
+  tExit  = tmax;\r
+  // inklusiv vergleichen (tangent ok) und Hits vor der Kamera zulassen,\r
+  // denn der Aufrufer klemmt danach ohnehin auf EPS.\r
+  return tExit >= max(tEnter, 0.0);\r
 }\r
+\r
 \r
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {\r
   float c300 = coeffs[0];\r
@@ -223,11 +268,11 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {\r
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;\r
 \r
   float tEnter, tExit;\r
-  //if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;\r
-  //tEnter = max(tEnter, EPS);\r
+  if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;\r
+  tEnter = max(tEnter, EPS);   // bei Startpunkt in der Box wird tEnter < 0\r
 \r
-  tEnter = EPS;          // praktisch "ab Kamera"\r
-  tExit  = 100;          // großer Wert\r
+  //tEnter = EPS;          // praktisch "ab Kamera"\r
+  //tExit  = 100;          // großer Wert\r
 \r
   vec3 res;\r
   float t = 1e20f;\r
@@ -391,4 +436,4 @@ void main() {\r
 \r
   fColor = vec4(rgb, 1.0);\r
 }\r
-`,v=3,X=.03;function w(r){const n=window.innerWidth,o=window.innerHeight,c=16/9;let a=n,f=n/c;f>o&&(f=o,a=o*c);const s=window.devicePixelRatio||1;r.width=Math.max(1,Math.floor(a*s)),r.height=Math.max(1,Math.floor(f*s)),r.style.width=`${a}px`,r.style.height=`${f}px`}function y(r,n,o){const c=r.createShader(n);if(r.shaderSource(c,o),r.compileShader(c),!r.getShaderParameter(c,r.COMPILE_STATUS))throw new Error(r.getShaderInfoLog(c)||"shader error");return c}function T(r,n,o){const c=r.createProgram();if(r.attachShader(c,y(r,r.VERTEX_SHADER,n)),r.attachShader(c,y(r,r.FRAGMENT_SHADER,o)),r.linkProgram(c),!r.getProgramParameter(c,r.LINK_STATUS))throw new Error(r.getProgramInfoLog(c)||"link error");return c}function P(r,n){const o=v,c=new Float32Array([-3,-3,-3,o,-3,-3,-3,o,-3,o,o,-3,-3,-3,o,o,-3,o,-3,o,o,o,o,o]),a=new Uint16Array([0,2,1,1,2,3,4,5,6,6,5,7,0,1,5,0,5,4,2,6,7,2,7,3,7,5,1,7,1,3,0,4,6,0,6,2]),f=r.createVertexArray();r.bindVertexArray(f);const s=r.createBuffer();r.bindBuffer(r.ARRAY_BUFFER,s),r.bufferData(r.ARRAY_BUFFER,c,r.STATIC_DRAW);const d=r.getAttribLocation(n,"aPosition");r.enableVertexAttribArray(d),r.vertexAttribPointer(d,3,r.FLOAT,!1,0,0);const t=r.createBuffer();return r.bindBuffer(r.ELEMENT_ARRAY_BUFFER,t),r.bufferData(r.ELEMENT_ARRAY_BUFFER,a,r.STATIC_DRAW),r.bindVertexArray(null),{vao:f,iboSize:a.length}}function k(r){const n=new p(45,r,.1,100);return n.position.set(10,10,15),n.lookAt(0,0,0),n}function z(r,n){const o=new A(r,n);return o.enableDamping=!0,o.dampingFactor=.08,o.rotateSpeed=.9,o.zoomSpeed=1,o.panSpeed=.9,o.target.set(0,0,0),o.update(),o}function I(){var l;const r=document.getElementById("glcanvas");w(r);const n=r.getContext("webgl2"),o=T(n,S,B);n.useProgram(o);const{vao:c,iboSize:a}=P(n,o),f=r.width/r.height;let s=k(f),d=z(s,r);const t={gl:n,prog:o,vao:c,iboSize:a,uProjection:n.getUniformLocation(o,"uProjection"),uModelView:n.getUniformLocation(o,"uModelView"),uModelInverse:n.getUniformLocation(o,"uModelInverse"),uOrthographic:n.getUniformLocation(o,"uOrthographic"),uSurface:n.getUniformLocation(o,"uSurface"),uCoeffs:n.getUniformLocation(o,"uCoeffs"),uShowAxes:n.getUniformLocation(o,"uShowAxes"),uShowBox:n.getUniformLocation(o,"uShowBox"),uHalf:n.getUniformLocation(o,"uHalf"),uEdgeThickness:n.getUniformLocation(o,"uEdgeThickness"),viewMode:1,surfaceMode:1,showAxes:!0,showBox:!0,coeffs:new Float32Array([0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,-1]),camera:s,controls:d};n.clearColor(1,1,1,1),n.enable(n.DEPTH_TEST),n.enable(n.CULL_FACE),window.addEventListener("resize",()=>{w(r);const i=r.width/r.height;if(t.viewMode===2&&t.camera instanceof x){const e=(t.camera.top-t.camera.bottom)*.5;t.camera.left=-e*i,t.camera.right=e*i,t.camera.top=e,t.camera.bottom=-e,t.camera.updateProjectionMatrix()}else t.camera instanceof p&&(t.camera.aspect=i,t.camera.updateProjectionMatrix())}),window.addEventListener("message",i=>{const e=i.data||{};if(e.type==="coeffs"&&Array.isArray(e.coeffs)&&e.coeffs.length===20)t.coeffs.set(e.coeffs);else if(e.type==="controls"){if(typeof e.viewMode=="number"){const u=e.viewMode|0;u!==t.viewMode&&U(t,u)}if(typeof e.surfaceMode<"u"){if(typeof e.surfaceMode=="number")t.surfaceMode=e.surfaceMode|0;else if(typeof e.surfaceMode=="string"){const u={sphere:1,clebsch:2,cayley:3,monkeySaddle:4,cylinder:5,crosspropeller:6,custom:7};t.surfaceMode=u[e.surfaceMode]??t.surfaceMode}}typeof e.showAxes=="boolean"&&(t.showAxes=!!e.showAxes),typeof e.showBox=="boolean"&&(t.showBox=!!e.showBox)}});try{(l=window.parent)==null||l.postMessage({type:"ready"},"*")}catch{}return t}function U(r,n){const o=r.gl.canvas,c=o.width/o.height,a=r.camera,f=r.controls.target.clone(),s=a.position.clone(),d=s.clone().sub(f).length();r.controls.dispose();const t=()=>{if(a instanceof p){const e=h.degToRad(a.fov);return Math.tan(e*.5)*Math.max(d,1e-4)}else return(a.top-a.bottom)*.5},l=()=>{if(a instanceof x){const e=(a.top-a.bottom)*.5,u=2*Math.atan(Math.max(e,1e-4)/Math.max(d,1e-4));return h.clamp(h.radToDeg(u),10,75)}else return a.fov};let i;if(n===2){const e=t();i=new x(-e*c,+e*c,+e,-e,.1,100)}else{const e=l();i=new p(e,c,.1,100)}i.position.copy(s),i.lookAt(f),i.updateProjectionMatrix(),r.camera=i,r.controls=z(r.camera,o),r.controls.target.copy(f),r.controls.update(),r.viewMode=n}function D(r){const{gl:n}=r;n.viewport(0,0,n.canvas.width,n.canvas.height),n.clear(n.COLOR_BUFFER_BIT|n.DEPTH_BUFFER_BIT),n.useProgram(r.prog),n.bindVertexArray(r.vao),r.uShowBox&&n.uniform1i(r.uShowBox,r.showBox?1:0),n.uniform1f(r.uHalf,v),n.uniform1f(r.uEdgeThickness,X),n.uniform1i(r.uSurface,r.surfaceMode),n.uniform1fv(r.uCoeffs,r.coeffs),n.uniform1i(r.uOrthographic,r.viewMode===2?1:0);const o=1.6,c=(a,f)=>{f?n.colorMask(...f):n.colorMask(!0,!0,!0,!0),r.controls.update(),r.camera.updateMatrixWorld(!0),a!==0&&(r.camera.position.x-=a,r.camera.updateMatrixWorld(!0));const s=new Float32Array(r.camera.projectionMatrix.elements);n.uniformMatrix4fv(r.uProjection,!1,s);const d=new Float32Array(r.camera.matrixWorldInverse.elements),t=m();g(t,t,[o,o,o]);const l=E(d),i=m();M(i,l,t),n.uniformMatrix4fv(r.uModelView,!1,i);const e=C(m(),i);n.uniformMatrix4fv(r.uModelInverse,!1,e),n.uniform1i(r.uShowAxes,r.showAxes?1:0),n.drawElements(n.TRIANGLES,r.iboSize,n.UNSIGNED_SHORT,0),a!==0&&(r.camera.position.x+=a,r.camera.updateMatrixWorld(!0))};r.viewMode===3?(c(-.12,[!0,!1,!1,!0]),n.clear(n.DEPTH_BUFFER_BIT),c(.12,[!1,!0,!0,!0]),n.colorMask(!0,!0,!0,!0)):c(0),n.bindVertexArray(null)}function b(r){D(r),requestAnimationFrame(()=>b(r))}window.addEventListener("load",()=>{const r=I();b(r)});
+`,v=3,X=.03;function w(r){const n=window.innerWidth,o=window.innerHeight,a=16/9;let c=n,f=n/a;f>o&&(f=o,c=o*a);const s=window.devicePixelRatio||1;r.width=Math.max(1,Math.floor(c*s)),r.height=Math.max(1,Math.floor(f*s)),r.style.width=`${c}px`,r.style.height=`${f}px`}function y(r,n,o){const a=r.createShader(n);if(r.shaderSource(a,o),r.compileShader(a),!r.getShaderParameter(a,r.COMPILE_STATUS))throw new Error(r.getShaderInfoLog(a)||"shader error");return a}function P(r,n,o){const a=r.createProgram();if(r.attachShader(a,y(r,r.VERTEX_SHADER,n)),r.attachShader(a,y(r,r.FRAGMENT_SHADER,o)),r.linkProgram(a),!r.getProgramParameter(a,r.LINK_STATUS))throw new Error(r.getProgramInfoLog(a)||"link error");return a}function k(r,n){const o=v,a=new Float32Array([-3,-3,-3,o,-3,-3,-3,o,-3,o,o,-3,-3,-3,o,o,-3,o,-3,o,o,o,o,o]),c=new Uint16Array([0,2,1,1,2,3,4,5,6,6,5,7,0,1,5,0,5,4,2,6,7,2,7,3,7,5,1,7,1,3,0,4,6,0,6,2]),f=r.createVertexArray();r.bindVertexArray(f);const s=r.createBuffer();r.bindBuffer(r.ARRAY_BUFFER,s),r.bufferData(r.ARRAY_BUFFER,a,r.STATIC_DRAW);const d=r.getAttribLocation(n,"aPosition");r.enableVertexAttribArray(d),r.vertexAttribPointer(d,3,r.FLOAT,!1,0,0);const t=r.createBuffer();return r.bindBuffer(r.ELEMENT_ARRAY_BUFFER,t),r.bufferData(r.ELEMENT_ARRAY_BUFFER,c,r.STATIC_DRAW),r.bindVertexArray(null),{vao:f,iboSize:c.length}}function I(r){const n=new p(45,r,.1,100);return n.position.set(10,10,15),n.lookAt(0,0,0),n}function b(r,n){const o=new A(r,n);return o.enableDamping=!0,o.dampingFactor=.08,o.rotateSpeed=.9,o.zoomSpeed=1,o.panSpeed=.9,o.target.set(0,0,0),o.update(),o}function T(){var l;const r=document.getElementById("glcanvas");w(r);const n=r.getContext("webgl2"),o=P(n,C,B);n.useProgram(o);const{vao:a,iboSize:c}=k(n,o),f=r.width/r.height;let s=I(f),d=b(s,r);const t={gl:n,prog:o,vao:a,iboSize:c,uProjection:n.getUniformLocation(o,"uProjection"),uModelView:n.getUniformLocation(o,"uModelView"),uModelInverse:n.getUniformLocation(o,"uModelInverse"),uOrthographic:n.getUniformLocation(o,"uOrthographic"),uSurface:n.getUniformLocation(o,"uSurface"),uCoeffs:n.getUniformLocation(o,"uCoeffs"),uShowAxes:n.getUniformLocation(o,"uShowAxes"),uShowBox:n.getUniformLocation(o,"uShowBox"),uHalf:n.getUniformLocation(o,"uHalf"),uEdgeThickness:n.getUniformLocation(o,"uEdgeThickness"),viewMode:1,surfaceMode:1,showAxes:!0,showBox:!0,coeffs:new Float32Array([0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,-1]),camera:s,controls:d};n.clearColor(1,1,1,1),n.enable(n.DEPTH_TEST),n.enable(n.CULL_FACE),window.addEventListener("resize",()=>{w(r);const i=r.width/r.height;if(t.viewMode===2&&t.camera instanceof x){const e=(t.camera.top-t.camera.bottom)*.5;t.camera.left=-e*i,t.camera.right=e*i,t.camera.top=e,t.camera.bottom=-e,t.camera.updateProjectionMatrix()}else t.camera instanceof p&&(t.camera.aspect=i,t.camera.updateProjectionMatrix())}),window.addEventListener("message",i=>{const e=i.data||{};if(e.type==="coeffs"&&Array.isArray(e.coeffs)&&e.coeffs.length===20)t.coeffs.set(e.coeffs);else if(e.type==="controls"){if(typeof e.viewMode=="number"){const u=e.viewMode|0;u!==t.viewMode&&R(t,u)}if(typeof e.surfaceMode<"u"){if(typeof e.surfaceMode=="number")t.surfaceMode=e.surfaceMode|0;else if(typeof e.surfaceMode=="string"){const u={sphere:1,clebsch:2,cayley:3,monkeySaddle:4,cylinder:5,crosspropeller:6,custom:7};t.surfaceMode=u[e.surfaceMode]??t.surfaceMode}}typeof e.showAxes=="boolean"&&(t.showAxes=!!e.showAxes),typeof e.showBox=="boolean"&&(t.showBox=!!e.showBox)}});try{(l=window.parent)==null||l.postMessage({type:"ready"},"*")}catch{}return t}function R(r,n){const o=r.gl.canvas,a=o.width/o.height,c=r.camera,f=r.controls.target.clone(),s=c.position.clone(),d=s.clone().sub(f).length();r.controls.dispose();const t=()=>{if(c instanceof p){const e=h.degToRad(c.fov);return Math.tan(e*.5)*Math.max(d,1e-4)}else return(c.top-c.bottom)*.5},l=()=>{if(c instanceof x){const e=(c.top-c.bottom)*.5,u=2*Math.atan(Math.max(e,1e-4)/Math.max(d,1e-4));return h.clamp(h.radToDeg(u),10,75)}else return c.fov};let i;if(n===2){const e=t();i=new x(-e*a,+e*a,+e,-e,.1,100)}else{const e=l();i=new p(e,a,.1,100)}i.position.copy(s),i.lookAt(f),i.updateProjectionMatrix(),r.camera=i,r.controls=b(r.camera,o),r.controls.target.copy(f),r.controls.update(),r.viewMode=n}function F(r){const{gl:n}=r;n.viewport(0,0,n.canvas.width,n.canvas.height),n.clear(n.COLOR_BUFFER_BIT|n.DEPTH_BUFFER_BIT),n.useProgram(r.prog),n.bindVertexArray(r.vao),r.uShowBox&&n.uniform1i(r.uShowBox,r.showBox?1:0),n.uniform1f(r.uHalf,v),n.uniform1f(r.uEdgeThickness,X),n.uniform1i(r.uSurface,r.surfaceMode),n.uniform1fv(r.uCoeffs,r.coeffs),n.uniform1i(r.uOrthographic,r.viewMode===2?1:0);const o=1.6,a=(c,f)=>{f?n.colorMask(...f):n.colorMask(!0,!0,!0,!0),r.controls.update(),r.camera.updateMatrixWorld(!0),c!==0&&(r.camera.position.x-=c,r.camera.updateMatrixWorld(!0));const s=new Float32Array(r.camera.projectionMatrix.elements);n.uniformMatrix4fv(r.uProjection,!1,s);const d=new Float32Array(r.camera.matrixWorldInverse.elements),t=m();E(t,t,[o,o,o]);const l=g(d),i=m();M(i,l,t),n.uniformMatrix4fv(r.uModelView,!1,i);const e=S(m(),i);n.uniformMatrix4fv(r.uModelInverse,!1,e),n.uniform1i(r.uShowAxes,r.showAxes?1:0),n.drawElements(n.TRIANGLES,r.iboSize,n.UNSIGNED_SHORT,0),c!==0&&(r.camera.position.x+=c,r.camera.updateMatrixWorld(!0))};r.viewMode===3?(a(-.12,[!0,!1,!1,!0]),n.clear(n.DEPTH_BUFFER_BIT),a(.12,[!1,!0,!0,!0]),n.colorMask(!0,!0,!0,!0)):a(0),n.bindVertexArray(null)}function z(r){F(r),requestAnimationFrame(()=>z(r))}window.addEventListener("load",()=>{const r=T();z(r)});

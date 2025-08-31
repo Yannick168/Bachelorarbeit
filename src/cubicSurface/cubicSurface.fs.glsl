@@ -102,16 +102,61 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
 
 const float EPS = 1e-4;
 
-bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
-  vec3 invD = 1.0 / rd;
-  vec3 t0 = (vec3(-h) - ro) * invD;
-  vec3 t1 = (vec3( h) - ro) * invD;
-  vec3 tmin = min(t0, t1);
-  vec3 tmax = max(t0, t1);
-  tEnter = max(max(tmin.x, tmin.y), tmin.z);
-  tExit  = min(min(tmax.x, tmax.y), tmax.z);
-  return tExit > max(tEnter, 0.0);
+bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit)
+{
+  const float INF = 1e30;
+  const float EPS_DIR = 1e-8;
+
+  float tmin = -INF;
+  float tmax =  INF;
+
+  // X
+  if (abs(rd.x) < EPS_DIR) {
+    if (ro.x < -h || ro.x > h) return false; // parallel & außerhalb
+    // sonst: keine Einschränkung durch x-Slab
+  } else {
+    float ood = 1.0 / rd.x;
+    float t0 = (-h - ro.x) * ood;
+    float t1 = ( h - ro.x) * ood;
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }
+    tmin = max(tmin, t0);
+    tmax = min(tmax, t1);
+    if (tmax < tmin) return false;
+  }
+
+  // Y
+  if (abs(rd.y) < EPS_DIR) {
+    if (ro.y < -h || ro.y > h) return false;
+  } else {
+    float ood = 1.0 / rd.y;
+    float t0 = (-h - ro.y) * ood;
+    float t1 = ( h - ro.y) * ood;
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }
+    tmin = max(tmin, t0);
+    tmax = min(tmax, t1);
+    if (tmax < tmin) return false;
+  }
+
+  // Z
+  if (abs(rd.z) < EPS_DIR) {
+    if (ro.z < -h || ro.z > h) return false;
+  } else {
+    float ood = 1.0 / rd.z;
+    float t0 = (-h - ro.z) * ood;
+    float t1 = ( h - ro.z) * ood;
+    if (t0 > t1) { float s=t0; t0=t1; t1=s; }
+    tmin = max(tmin, t0);
+    tmax = min(tmax, t1);
+    if (tmax < tmin) return false;
+  }
+
+  tEnter = tmin;
+  tExit  = tmax;
+  // inklusiv vergleichen (tangent ok) und Hits vor der Kamera zulassen,
+  // denn der Aufrufer klemmt danach ohnehin auf EPS.
+  return tExit >= max(tEnter, 0.0);
 }
+
 
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c300 = coeffs[0];
@@ -207,11 +252,11 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   float tEnter, tExit;
-  //if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
-  //tEnter = max(tEnter, EPS);
+  if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
+  tEnter = max(tEnter, EPS);   // bei Startpunkt in der Box wird tEnter < 0
 
-  tEnter = EPS;          // praktisch "ab Kamera"
-  tExit  = 100;          // großer Wert
+  //tEnter = EPS;          // praktisch "ab Kamera"
+  //tExit  = 100;          // großer Wert
 
   vec3 res;
   float t = 1e20f;
