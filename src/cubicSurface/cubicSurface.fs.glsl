@@ -167,11 +167,14 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
 
   float a[4];
 
+
+
   a[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
     c030*pow(rd.y,3.0) + c102*rd.x*pow(rd.z,2.0) + c111*rd.x*rd.y*rd.z +
     c120*rd.x*pow(rd.y,2.0) + c201*pow(rd.x,2.0)*rd.z + c210*pow(rd.x,2.0)*rd.y +
     c300*pow(rd.x,3.0);
+
 
   a[2] =
     ro.x*c102*pow(rd.z,2.0) + ro.x*c111*rd.y*rd.z + ro.x*c120*pow(rd.y,2.0) +
@@ -204,8 +207,11 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   float tEnter, tExit;
-  if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
-  tEnter = max(tEnter, EPS);
+  //if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
+  //tEnter = max(tEnter, EPS);
+
+  tEnter = EPS;          // praktisch "ab Kamera"
+  tExit  = 1e9;          // großer Wert
 
   vec3 res;
   float t = 1e20f;

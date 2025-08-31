@@ -93,7 +93,7 @@
 <script>
 /* <![CDATA[ */
 // === Render-Seite ===
-const cubicUrl = "https://yannick168.github.io/Bachelorarbeit/src/cubicSurface/cubicSurface.html";
+const cubicUrl = "https://yannick168.github.io/Bachelorarbeit/src/cubicSurfaceTest/cubicSurface.html";
 
 /* Monomiale (ASCII/TeX-Keys) */
 const monomials = [
@@ -306,11 +306,20 @@ function sendAll(){
   const coeffs = currentCoeffs();
   frame.contentWindow.postMessage({ type: "coeffs", coeffs }, "*");
 
-  const viewMode = parseInt(document.getElementById("viewMode").value, 10);
-  const showBox = document.getElementById("showBox").checked;
-  const showAxes = document.getElementById("showAxes").checked;
-  frame.contentWindow.postMessage({ type: "controls", viewMode, showBox, showAxes }, "*");
+  const viewMode  = parseInt(document.getElementById("viewMode").value, 10);
+  const showBox   = document.getElementById("showBox").checked;
+  const showAxes  = document.getElementById("showAxes").checked;
+  const surfaceKey = document.getElementById("surfaceMode").value; // <— NEU
+
+  frame.contentWindow.postMessage({
+    type: "controls",
+    viewMode,
+    showBox,
+    showAxes,
+    surfaceMode: surfaceKey   // <— NEU
+  }, "*");
 }
+
 
 
 function resetSlidersToCenter(span = 5){
