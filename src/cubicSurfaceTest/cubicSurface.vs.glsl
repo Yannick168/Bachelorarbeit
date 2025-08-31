@@ -1,15 +1,13 @@
 #version 300 es
 precision highp float;
 
-layout(location=0) in vec3 aPosition;
+in vec3 aPosition;      // Würfel-Position (Modelraum)
+out vec3 vUV;           // an FS weiterreichen
 
-uniform mat4 uModelView;
 uniform mat4 uProjection;
-
-out vec3 vUV;
+uniform mat4 uModelView;
 
 void main() {
-    vec4 pos = vec4(aPosition,1.0);
-    vUV = pos.xyz;
-    gl_Position = uProjection * uModelView * pos;
+  vUV = aPosition;                              // im Modelraum bleiben
+  gl_Position = uProjection * uModelView * vec4(aPosition, 1.0);
 }
