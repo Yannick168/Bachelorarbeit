@@ -185,20 +185,34 @@ window.addEventListener('resize', () => {
 });
 
   // Messaging vom Widget
-  window.addEventListener('message', (e: MessageEvent<any>) => {
-    const d = e.data || {};
-    if (d.type === 'coeffs' && Array.isArray(d.coeffs) && d.coeffs.length === 20){
-      ctx.coeffs.set(d.coeffs);
-    } else if (d.type === 'controls') {
-      if (typeof d.viewMode === 'number') {
-        const newMode = d.viewMode|0;
-        if (newMode !== ctx.viewMode) switchCamera(ctx, newMode);
-      }
-      if (typeof d.surfaceMode === 'number') ctx.surfaceMode = d.surfaceMode|0;
-      if (typeof d.showAxes === 'boolean') ctx.showAxes = !!d.showAxes;
-      if (typeof d.showBox === 'boolean') ctx.showBox = !!d.showBox;
+window.addEventListener('message', (e: MessageEvent<any>) => {
+  const d = e.data || {};
+
+  if (d.type === 'coeffs' && Array.isArray(d.coeffs) && d.coeffs.length === 20){
+    ctx.coeffs.set(d.coeffs);
+
+  } else if (d.type === 'controls') {
+    if (typeof d.viewMode === 'number') {
+      const newMode = d.viewMode|0;
+      if (newMode !== ctx.viewMode) switchCamera(ctx, newMode);
     }
-  });
+    if (typeof d.surfaceMode !== 'undefined') {
+      // akzeptiere String-Presets ODER numerische Modi
+      if (typeof d.surfaceMode === 'number') {
+        ctx.surfaceMode = d.surfaceMode|0;
+      } else if (typeof d.surfaceMode === 'string') {
+        // Mappe Namen auf Zahlen, falls dein Shader numerische Modi erwartet:
+        const map: Record<string, number> = {
+          sphere:1, clebsch:2, cayley:3, monkeySaddle:4, cylinder:5, crosspropeller:6, custom:7
+        };
+        ctx.surfaceMode = map[d.surfaceMode] ?? ctx.surfaceMode;
+      }
+    }
+    if (typeof d.showAxes === 'boolean') ctx.showAxes = !!d.showAxes;
+    if (typeof d.showBox  === 'boolean') ctx.showBox  = !!d.showBox;
+  }
+});
+
 
   // ready -> Widget
   try { window.parent?.postMessage({ type: 'ready' }, '*'); } catch {}
