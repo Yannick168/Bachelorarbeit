@@ -1,16 +1,233 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cubic Surface Renderer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cubic Surface Viewer</title>
   <style>
-    html, body { height: 100%; margin: 0; background: #fff; }
-    #glcanvas { display:block; width:100vw; height:100vh; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px;
+      border-radius: 6px;
+      font-family: sans-serif;
+      max-height: 95vh;
+      overflow-y: auto;
+      max-width: 420px;
+    }
+    .coeff-group {
+      margin-bottom: 8px;
+    }
+    input[type="number"] {
+      width: 60px;
+    }
+    input[type="range"] {
+      width: 200px;
+    }
+    label {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <canvas id="glcanvas"></canvas>
+
+  <div id="controls">
+    <label>View:
+      <select id="viewMode">
+        <option value="1">Perspective</option>
+        <option value="2">Orthographic</option>
+        <option value="3">Stereo</option>
+      </select>
+    </label>
+    <br/><br/>
+    <label>Surface:
+      <select id="surfaceMode">
+        <option value="1">Benutzerdefiniert</option>
+        <option value="2">Clebsch</option>
+      </select>
+    </label>
+    <br/><br/>
+    <div id="coeffContainer"></div>
+  </div>
+
+  <script type="module">
+    const coeffContainer = document.getElementById("coeffContainer");
+    const monomials = [
+      "x³", "y³", "z³",
+      "x²y", "x²z", "y²z", "yz²", "xy²", "xz²", "xyz",
+      "x²", "y²", "z²",
+      "xz", "xy", "yz",
+      "x", "y", "z", 
+      "1"
+    ];
+
+    // default sphere
+    const cubicSurface = [
+      81, 81, 81, 
+      -189, -189, -189, -189, -189, -189, 54,
+      -9, -9, -9, 
+      126, 126, 126, 
+      -9, -9, -9, 1
+    ];
+
+
+    /*
+    // default sphere
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1,
+      0, 0, 0,
+      0, 0, 0, -1
+    ];
+
+    // Clebsch
+    const cubicSurface = [
+      81, 81, 81, 
+      -189, -189, -189, -189, -189, -189, 54,
+      -9, -9, -9, 
+      126, 126, 126, 
+      -9, -9, -9, 1
+    ];
+  
+    // Cayley-Kubik
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 1,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 1, 1, 
+      1
+    ];
+
+
+    // Monkey Saddle
+    const cubicSurface = [
+      1, 0, 0, 
+      0, 0, 0, 0, -3, 0, 0,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 0, -1, 
+      0
+    ];
+
+
+    // Cubic Cylinder
+    const cubicSurface = [
+      1, 1, 0, 
+      0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 
+      0, 0, 0, 
+      0, 0, -1, 
+      0
+    ];
+
+
+    // General Saddle Surface
+    const cubicSurface = [
+      0, 0, 1, 
+      0, 0, 0, 0, 0, 0, 0,
+      1, -1, 0, 
+      0, 0, 0, 
+      0, 0, 0, 
+      0
+    ];
+    
+    // Cayley 2 (Problem mit dem cubic solver)
+    const cubicSurface = [
+      -1.6, 0, 1, 
+      0, 0, 0, 0, 4.8, 0, 0,
+      0, 0.8, 0, 
+      0, 0, 0,
+      0, 0, 0, 
+      0
+    ];
+
+
+    // Crosspropeller
+    const cubicSurface = [
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 1,
+      1, 0.1, 0, 
+      0, 0, 0, 
+      0, 0, 0, 
+      0
+    ];
+    */
+
+    const coeffInputs = [];
+
+    for (let i = 0; i < 20; i++) {
+      const group = document.createElement("div");
+      group.className = "coeff-group";
+
+      const label = document.createElement("label");
+      label.textContent = `${monomials[i]}: `;
+
+      const numberInput = document.createElement("input");
+      numberInput.type = "number";
+      numberInput.value = cubicSurface[i].toString();
+      numberInput.step = "0.1";
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = (cubicSurface[i] - 10).toString();
+      slider.max = (cubicSurface[i] + 10).toString();
+      slider.step = "0.1";
+      slider.value = cubicSurface[i].toString();
+
+      numberInput.addEventListener("input", () => {
+        const val = parseFloat(numberInput.value) || 0;
+        slider.min = (val - 5).toFixed(1);
+        slider.max = (val + 5).toFixed(1);
+        slider.value = val.toString();
+        triggerUpdate();
+      });
+
+      slider.addEventListener("input", () => {
+        numberInput.value = slider.value;
+        triggerUpdate();
+      });
+
+      group.appendChild(label);
+      group.appendChild(numberInput);
+      group.appendChild(slider);
+      coeffContainer.appendChild(group);
+
+      coeffInputs.push(numberInput);
+    }
+
+    // Zugriff aus TypeScript
+    globalThis.getUserCoeffs = () => coeffInputs.map(input => parseFloat(input.value) || 0);
+    globalThis.getUserCoeffs.inputs = coeffInputs;
+
+    function triggerUpdate() {
+      const coeffs = coeffInputs.map(input => parseFloat(input.value) || 0);
+      const gl = window.ctx?.gl;
+      const program = window.ctx?.program;
+      const coeffLoc = gl?.getUniformLocation(program, "uCoeffs");
+      if (gl && program && coeffLoc) {
+        gl.useProgram(program);
+        gl.uniform1fv(coeffLoc, new Float32Array(coeffs));
+        window.ctx && window.drawScene && window.drawScene(window.ctx); // Echtzeit-Render
+      }
+    }
+  </script>
+
   <script type="module" src="./cubicSurface.ts"></script>
 </body>
 </html>

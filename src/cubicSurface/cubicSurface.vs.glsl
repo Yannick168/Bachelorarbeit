@@ -1,13 +1,15 @@
 #version 300 es
 precision highp float;
 
-in vec3 aPosition;       // aus VBO
-out vec3 vUV;            // Modelraum-Position
+layout(location=0) in vec3 aPosition;
 
-uniform mat4 uProjection;
 uniform mat4 uModelView;
+uniform mat4 uProjection;
+
+out vec3 vUV;
 
 void main() {
-  vUV = aPosition; // wir bleiben im Modelraum (wie früher)
-  gl_Position = uProjection * uModelView * vec4(aPosition, 1.0);
+    vec4 pos = vec4(aPosition, 1.0);
+    vUV = pos.xyz;
+    gl_Position = uProjection * uModelView * pos;
 }
