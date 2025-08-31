@@ -353,11 +353,15 @@ void main() {
     }
   }
 
-  vec3 camPos_model = (uModelInverse * vec4(0.0,0.0,0.0,1.0)).xyz;
-  vec3 camFwd_model = normalize((uModelInverse * vec4(0.0,0.0,1.0,0.0)).xyz);
+// uModelInverse = inverse(View * Model)   (so wie du’s in TS setzt)
+vec3 camPos_model = (uModelInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
-  vec3 ro = (uOrthographic == 1) ? vUV     : camPos_model;
-  vec3 rd = (uOrthographic == 1) ? -camFwd_model : normalize(vUV - camPos_model);
+// WICHTIG: -Z im Kameraraum ist "nach vorn"
+vec3 camFwd_model = normalize((uModelInverse * vec4(0.0, 0.0, -1.0, 0.0)).xyz);
+
+// vUV ist die Modelraum-Position auf der Würfelfläche (aus VS)
+vec3 ro = (uOrthographic == 1) ? vUV                 : camPos_model;
+vec3 rd = (uOrthographic == 1) ? -camFwd_model       : normalize(vUV - camPos_model);
 
   rd = normalize(rd);
   ro += 1e-4 * rd;
