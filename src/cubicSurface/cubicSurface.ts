@@ -114,14 +114,6 @@ function makePerspective(aspect: number) {
   cam.lookAt(0, 0, 0);
   return cam;
 }
-const ORTHO_BASE_SIZE = 5.0; // deine frühere Ortho-Größe ~ 5.0/zoom, Zoom übernimmt jetzt die Kamera
-function makeOrtho(aspect: number) {
-  const s = ORTHO_BASE_SIZE;
-  const cam = new THREE.OrthographicCamera(-s*aspect, s*aspect, s, -s, 0.1, 100);
-  cam.position.set(0, 0, 8);
-  cam.lookAt(0, 0, 0);
-  return cam;
-}
 
 function makeControls(camera: THREE.Camera, canvas: HTMLCanvasElement){
   const controls = new OrbitControls(camera as any, canvas);
