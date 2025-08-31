@@ -1,74 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cubic Surface Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cubic Surface Renderer</title>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #000;
-    }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.95);
-      padding: 10px;
-      border-radius: 6px;
-      font-family: sans-serif;
-      max-height: 95vh;
-      overflow-y: auto;
-      max-width: 420px;
-    }
-    .coeff-group {
-      margin-bottom: 8px;
-    }
-    input[type="number"] {
-      width: 60px;
-    }
-    input[type="range"] {
-      width: 200px;
-    }
-    label {
-      font-weight: bold;
-    }
+    html, body { height: 100%; margin: 0; background: #fff; }
+    #glcanvas { display:block; width:100vw; height:100vh; }
   </style>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurfaceTest-B0_oWm7b.js"></script>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/cubicSurfaceTest-Bsq4KRsw.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/mat4-BUOhX8_y.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/vec3-Cv4cOPFR.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/vec2-DADnB5pl.js">
 </head>
 <body>
-  <canvas id="glcanvas"></canvas>
-
-  <div id="controls">
-    <label>View:
-      <select id="viewMode">
-        <option value="1">Perspective</option>
-        <option value="2">Orthographic</option>
-        <option value="3">Stereo</option>
-      </select>
-    </label>
-    <br/><br/>
-    <label>Surface:
-      <select id="surfaceMode">
-        <option value="1">Benutzerdefiniert</option>
-        <option value="2">Clebsch</option>
-      </select>
-    </label>
-    <br/><br/>
-    <div id="coeffContainer"></div>
-  </div>
-
-
+  <canvas id="glcanvas"></canvas>
 </body>
 </html>
