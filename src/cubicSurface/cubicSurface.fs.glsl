@@ -211,7 +211,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   //tEnter = max(tEnter, EPS);
 
   tEnter = EPS;          // praktisch "ab Kamera"
-  tExit  = 1e9;          // großer Wert
+  tExit  = 100;          // großer Wert
 
   vec3 res;
   float t = 1e20f;
