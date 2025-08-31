@@ -152,7 +152,13 @@ function init(): Ctx {
     surfaceMode: 1,
     showAxes: true,
     showBox: true,
-    coeffs: new Float32Array([ 0,0,0, 0,0,0,0,0,0,0, 1,1,1, 0,0,0, 0,0,0, -1 ]),
+    coeffs: new Float32Array([
+      0, 0, 0, 
+      0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1,
+      0, 0, 0,
+      0, 0, 0, -1
+    ]),
     camera, controls
   };
 
