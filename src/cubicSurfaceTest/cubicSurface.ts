@@ -1,8 +1,4 @@
-// file: cubicSurfaceApp.ts
-import { mat4 } from 'gl-matrix';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-
+import { mat4, vec2, vec3, quat } from 'gl-matrix';
 import vsSource from './cubicSurface.vs.glsl?raw';
 import fsSource from './cubicSurface.fs.glsl?raw';
 
@@ -26,22 +22,21 @@ type Ctx = {
   uHalf: WebGLUniformLocation | null;
   uEdgeThickness: WebGLUniformLocation | null;
 
-  // Kamera/Controls via Three.js
-  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
-  controls: OrbitControls;
+  // Kamera/Interaktion
+  qRot: quat;
+  zoom: number;
+  mouseDown: boolean;
+  mouse: vec2;
 
-  // Controls/Anzeige
-  viewMode: number;   // 1=persp, 2=ortho, 3=stereo (anaglyph)
+  // Controls
+  viewMode: number;   // 1=persp, 2=ortho, 3=stereo
   surfaceMode: number;
-  showBox: boolean;
 
   coeffs: Float32Array;
 };
 
 const HALF = 3.0;             // muss mit Shader-Uniform uHalf und Boxgeometrie übereinstimmen
 const EDGE_THICK = 0.03;
-
-// --- Hilfsfunktionen ---------------------------------------------------------
 
 function resizeCanvas(canvas: HTMLCanvasElement){
   const vw = window.innerWidth;
@@ -104,37 +99,6 @@ function createCube(gl: GL, prog: WebGLProgram){
   return { vao, iboSize: i.length };
 }
 
-// --- Three.js Kamera-/Controls-Setup ----------------------------------------
-
-function makePerspective(aspect: number) {
-  const cam = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  cam.position.set(0, 0, 8);   // entspricht deinem dist = 8
-  cam.lookAt(0, 0, 0);
-  return cam;
-}
-const ORTHO_BASE_SIZE = 5.0; // deine frühere Ortho-Größe ~ 5.0/zoom, Zoom übernimmt jetzt die Kamera
-function makeOrtho(aspect: number) {
-  const s = ORTHO_BASE_SIZE;
-  const cam = new THREE.OrthographicCamera(-s*aspect, s*aspect, s, -s, 0.1, 100);
-  cam.position.set(0, 0, 8);
-  cam.lookAt(0, 0, 0);
-  return cam;
-}
-
-function makeControls(camera: THREE.Camera, canvas: HTMLCanvasElement){
-  const controls = new OrbitControls(camera as any, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.rotateSpeed = 0.9;
-  controls.zoomSpeed = 1.0;
-  controls.panSpeed = 0.9;
-  controls.target.set(0, 0, 0);
-  controls.update();
-  return controls;
-}
-
-// --- App-Setup ---------------------------------------------------------------
-
 function init(): Ctx {
   const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
   resizeCanvas(canvas);
@@ -143,10 +107,6 @@ function init(): Ctx {
   gl.useProgram(prog);
 
   const { vao, iboSize } = createCube(gl, prog);
-
-  const aspect = canvas.width / canvas.height;
-  let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = makePerspective(aspect);
-  let controls = makeControls(camera, canvas);
 
   const ctx: Ctx = {
     gl, prog, vao, iboSize,
@@ -159,33 +119,44 @@ function init(): Ctx {
     uShowBox: gl.getUniformLocation(prog, 'uShowBox'),
     uHalf: gl.getUniformLocation(prog, 'uHalf'),
     uEdgeThickness: gl.getUniformLocation(prog, 'uEdgeThickness'),
-
-    viewMode: 1,               // Start: Perspective
+    qRot: quat.create(),
+    zoom: 0.9,
+    mouseDown: false,
+    mouse: vec2.create(),
+    viewMode: 1,
     surfaceMode: 1,
-    showBox: true,
-    coeffs: new Float32Array([ 0,0,0, 0,0,0,0,0,0,0, 1,1,1, 0,0,0, 0,0,0, -1 ]),
-    camera, controls
+    // Start: Kugel x^2 + y^2 + z^2 - 1 = 0
+    coeffs: new Float32Array([ 0,0,0, 0,0,0,0,0,0,0, 1,1,1, 0,0,0, 0,0,0, -1 ])
   };
 
   gl.clearColor(1,1,1,1);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
 
-  // Resize -> Kamera anpassen
-  window.addEventListener('resize', () => {
-    resizeCanvas(canvas);
-    const aspect = canvas.width / canvas.height;
-    if (ctx.viewMode === 2 && ctx.camera instanceof THREE.OrthographicCamera) {
-      ctx.camera.left   = -ORTHO_BASE_SIZE * aspect;
-      ctx.camera.right  =  ORTHO_BASE_SIZE * aspect;
-      ctx.camera.top    =  ORTHO_BASE_SIZE;
-      ctx.camera.bottom = -ORTHO_BASE_SIZE;
-      ctx.camera.updateProjectionMatrix();
-    } else if (ctx.camera instanceof THREE.PerspectiveCamera) {
-      ctx.camera.aspect = aspect;
-      ctx.camera.updateProjectionMatrix();
+  // User-Interaktion (Arcball)
+  canvas.addEventListener('mousedown', e => { ctx.mouseDown = true; vec2.set(ctx.mouse, e.clientX, e.clientY); });
+  canvas.addEventListener('mouseup', () => ctx.mouseDown = false);
+  canvas.addEventListener('mousemove', e => {
+    if (!ctx.mouseDown) return;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const map = (x:number,y:number) => {
+      const X = (2*x - w)/w, Y = (h - 2*y)/h;
+      const zz = 1 - X*X - Y*Y;
+      return vec3.fromValues(X, Y, zz>0?Math.sqrt(zz):0);
+    };
+    const p0 = map(ctx.mouse[0], ctx.mouse[1]);
+    const p1 = map(e.clientX, e.clientY);
+    const axis = vec3.create(); vec3.cross(axis, p0, p1);
+    if (vec3.length(axis) > 1e-6){
+      vec3.normalize(axis, axis);
+      const ang = Math.acos(Math.max(-1, Math.min(1, vec3.dot(p0, p1))));
+      const dq = quat.setAxisAngle(quat.create(), axis, ang);
+      quat.multiply(ctx.qRot, dq, ctx.qRot);
     }
+    vec2.set(ctx.mouse, e.clientX, e.clientY);
   });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); ctx.zoom *= (e.deltaY>0) ? 1/1.05 : 1.05; }, { passive:false });
+  window.addEventListener('resize', () => resizeCanvas(canvas));
 
   // Messaging vom Widget
   window.addEventListener('message', (e: MessageEvent<any>) => {
@@ -193,12 +164,8 @@ function init(): Ctx {
     if (d.type === 'coeffs' && Array.isArray(d.coeffs) && d.coeffs.length === 20){
       ctx.coeffs.set(d.coeffs);
     } else if (d.type === 'controls') {
-      if (typeof d.viewMode === 'number') {
-        const newMode = d.viewMode|0;
-        if (newMode !== ctx.viewMode) switchCamera(ctx, newMode);
-      }
+      if (typeof d.viewMode === 'number') ctx.viewMode = d.viewMode|0;
       if (typeof d.surfaceMode === 'number') ctx.surfaceMode = d.surfaceMode|0;
-      if (typeof d.showBox === 'boolean') ctx.showBox = !!d.showBox;
     }
   });
 
@@ -208,24 +175,6 @@ function init(): Ctx {
   return ctx;
 }
 
-function switchCamera(ctx: Ctx, newMode: number){
-  const canvas = ctx.gl.canvas as HTMLCanvasElement;
-  const aspect = canvas.width / canvas.height;
-
-  // alte Controls entsorgen
-  ctx.controls.dispose();
-
-  if (newMode === 2) {
-    ctx.camera = makeOrtho(aspect);
-  } else {
-    ctx.camera = makePerspective(aspect);
-  }
-  ctx.controls = makeControls(ctx.camera, canvas);
-  ctx.viewMode = newMode;
-}
-
-// --- Render-Loop -------------------------------------------------------------
-
 function draw(ctx: Ctx){
   const { gl } = ctx;
   gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
@@ -234,58 +183,51 @@ function draw(ctx: Ctx){
   // gemeinsame Einstellungen
   gl.useProgram(ctx.prog);
   gl.bindVertexArray(ctx.vao);
-  if (ctx.uShowBox) gl.uniform1i(ctx.uShowBox, ctx.showBox ? 1 : 0);
+  gl.uniform1i(ctx.uShowBox, 1);
   gl.uniform1f(ctx.uHalf, HALF);
   gl.uniform1f(ctx.uEdgeThickness, EDGE_THICK);
   gl.uniform1i(ctx.uSurface, ctx.surfaceMode);
   gl.uniform1fv(ctx.uCoeffs, ctx.coeffs);
   gl.uniform1i(ctx.uOrthographic, (ctx.viewMode===2) ? 1 : 0);
 
-  const baseScale = 1.6;  // Objekt-Skalierung; Zoom übernimmt jetzt die Kamera
+  // Kamera/Model-View
+  const aspect = gl.canvas.width / gl.canvas.height;
+  const proj = mat4.create();
+  const mv = mat4.create();
+
+  const near = 0.1, far = 100.0;
+  const dist = 8.0;
+  const baseScale = ctx.zoom * 1.6;
 
   const applyPass = (eyeOffsetX: number, colorMask?: [boolean,boolean,boolean,boolean]) => {
     if (colorMask) gl.colorMask(...colorMask); else gl.colorMask(true,true,true,true);
 
-    // Controls (Damping etc.)
-    ctx.controls.update();
-
-    // Kamera aktualisieren
-    ctx.camera.updateMatrixWorld(true);
-
-    // Für Stereo leicht versetzen (einfacher Screen-X Shift)
-    if (eyeOffsetX !== 0) {
-      ctx.camera.position.x -= eyeOffsetX;
-      ctx.camera.updateMatrixWorld(true);
+    // Projection
+    if (ctx.viewMode === 2) {
+      const size = 5.0 / ctx.zoom;
+      mat4.ortho(proj, -size*aspect, size*aspect, -size, size, near, far);
+    } else {
+      mat4.perspective(proj, Math.PI/4, aspect, near, far);
     }
 
-    // Projection-Matrix (direkt aus Three.js)
-    const projArr = new Float32Array((ctx.camera.projectionMatrix as THREE.Matrix4).elements);
-    gl.uniformMatrix4fv(ctx.uProjection, false, projArr);
+    // ModelView
+    mat4.identity(mv);
+    // Kamera leicht versetzen für Stereo
+    mat4.translate(mv, mv, [ -eyeOffsetX, 0, -dist ]);
+    const rot = mat4.fromQuat(mat4.create(), ctx.qRot);
+    mat4.multiply(mv, mv, rot);
+    mat4.scale(mv, mv, [baseScale, baseScale, baseScale]);
 
-    // View-Matrix (inverse Weltmatrix der Kamera)
-    const viewArr = new Float32Array((ctx.camera.matrixWorldInverse as THREE.Matrix4).elements);
-
-    // Model-Matrix (nur Skalierung)
-    const model = mat4.create();
-    mat4.scale(model, model, [baseScale, baseScale, baseScale]);
-
-    // MV & Inverse(MV)
-    const view = mat4.clone(viewArr as unknown as Float32Array);
-    const mv = mat4.create();
-    mat4.multiply(mv, view, model);
+    // Uniforms setzen
+    gl.uniformMatrix4fv(ctx.uProjection, false, proj);
     gl.uniformMatrix4fv(ctx.uModelView, false, mv);
 
+    // Inverse(ModelView) -> Fragment nutzt uModelInverse für Ray-Build
     const invMV = mat4.invert(mat4.create(), mv)!;
     gl.uniformMatrix4fv(ctx.uModelInverse, false, invMV);
 
     // draw
     gl.drawElements(gl.TRIANGLES, ctx.iboSize, gl.UNSIGNED_SHORT, 0);
-
-    // Stereo-Offset rückgängig machen
-    if (eyeOffsetX !== 0) {
-      ctx.camera.position.x += eyeOffsetX;
-      ctx.camera.updateMatrixWorld(true);
-    }
   };
 
   if (ctx.viewMode === 3) {
@@ -305,8 +247,6 @@ function loop(ctx: Ctx){
   draw(ctx);
   requestAnimationFrame(() => loop(ctx));
 }
-
-// --- Start -------------------------------------------------------------------
 
 window.addEventListener('load', () => {
   const ctx = init();

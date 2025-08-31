@@ -100,16 +100,17 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
 
 const float EPS = 1e-4;
 
-bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
+bool rayAABB(vec3 ro, vec3 rd, float h, out float tNear, out float tFar) {
     vec3 invD = 1.0 / rd;
     vec3 t0 = (vec3(-h) - ro) * invD;
     vec3 t1 = (vec3( h) - ro) * invD;
     vec3 tmin = min(t0, t1);
     vec3 tmax = max(t0, t1);
-    tEnter = max(max(tmin.x, tmin.y), tmin.z);
-    tExit  = min(min(tmax.x, tmax.y), tmax.z);
-    return tExit > max(tEnter, 0.0);
+    tNear = max(max(tmin.x, tmin.y), tmin.z);
+    tFar  = min(min(tmax.x, tmax.y), tmax.z);
+    return tFar > max(tNear, 0.0);
 }
+
 
   
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
@@ -166,15 +167,15 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
   float c001 = coeffs[18];
   float c000 = coeffs[19];
 
-  float a[4];
+  float coeff[4];
 
-  a[3] =
+  coeff[3] =
     c003*pow(rd.z,3.0) + c012*rd.y*pow(rd.z,2.0) + c021*pow(rd.y,2.0)*rd.z +
     c030*pow(rd.y,3.0) + c102*rd.x*pow(rd.z,2.0) + c111*rd.x*rd.y*rd.z +
     c120*rd.x*pow(rd.y,2.0) + c201*pow(rd.x,2.0)*rd.z + c210*pow(rd.x,2.0)*rd.y +
     c300*pow(rd.x,3.0);
 
-  a[2] =
+  coeff[2] =
     ro.x*c102*pow(rd.z,2.0) + ro.x*c111*rd.y*rd.z + ro.x*c120*pow(rd.y,2.0) +
     2.0*ro.x*c201*rd.x*rd.z + 2.0*ro.x*c210*rd.x*rd.y + 3.0*ro.x*c300*pow(rd.x,2.0) +
     ro.y*c012*pow(rd.z,2.0) + 2.0*ro.y*c021*rd.y*rd.z + 3.0*ro.y*c030*pow(rd.y,2.0) +
@@ -184,7 +185,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     c002*pow(rd.z,2.0) + c011*rd.y*rd.z + c020*pow(rd.y,2.0) +
     c101*rd.x*rd.z + c110*rd.x*rd.y + c200*pow(rd.x,2.0);
 
-  a[1] =
+  coeff[1] =
     pow(ro.x,2.0)*c201*rd.z + pow(ro.x,2.0)*c210*rd.y + 3.0*pow(ro.x,2.0)*c300*rd.x +
     ro.x*ro.y*c111*rd.z + 2.0*ro.x*ro.y*c120*rd.y + 2.0*ro.x*ro.y*c210*rd.x +
     2.0*ro.x*ro.z*c102*rd.z + ro.x*ro.z*c111*rd.y + 2.0*ro.x*ro.z*c201*rd.x +
@@ -196,7 +197,7 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     2.0*ro.z*c002*rd.z + ro.z*c011*rd.y + ro.z*c101*rd.x +
     c001*rd.z + c010*rd.y + c100*rd.x;
 
-  a[0] =
+  coeff[0] =
     pow(ro.x,3.0)*c300 + pow(ro.x,2.0)*ro.y*c210 + pow(ro.x,2.0)*ro.z*c201 + pow(ro.x,2.0)*c200 +
     ro.x*pow(ro.y,2.0)*c120 + ro.x*ro.y*ro.z*c111 + ro.x*ro.y*c110 +
     ro.x*pow(ro.z,2.0)*c102 + ro.x*ro.z*c101 + ro.x*c100 +
@@ -205,19 +206,19 @@ float cubicSurfaceIntersect(vec3 ro, vec3 rd, float coeffs[20]) {
     pow(ro.z,3.0)*c003 + pow(ro.z,2.0)*c002 + ro.z*c001 + c000;
 
   
-  float tEnter, tExit;
-  if (!rayAABB(ro, rd, uHalf, tEnter, tExit)) return -1.0;
-  tEnter = max(tEnter, EPS);
+  float tNear, tFar;
+  if (!rayAABB(ro, rd, uHalf, tNear, tFar)) return -1.0;
+  tNear = max(tNear, EPS);
 
   vec3 res;
   float t = 1e20f;
-  int n = cubic(a[3], a[2], a[1], a[0], res);
+  int n = cubic(coeff[3],coeff[2],coeff[1],coeff[0], res);
   
   // Kandidaten filtern auf Intervall
   for (int i = 0; i < n; ++i) {
     float ti = res[i];
     if (ti < 0.0)      continue;
-    if (ti < tEnter || ti > tExit) continue;
+    if (ti < tNear || ti > tFar) continue;
     t = min(t, ti);
   }
 

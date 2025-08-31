@@ -13,4 +13,3 @@ void main() {
     vUV = pos.xyz;
     gl_Position = uProjection * uModelView * pos;
 }
-
