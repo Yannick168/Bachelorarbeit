@@ -20,7 +20,7 @@ export default defineConfig({
         cubicSurfaceWidget: resolve(__dirname, 'src/cubicSurface/cubicSurfaceWidget.html'),
         cubicSurfaceTest: resolve(__dirname, 'src/cubicSurfaceTest/cubicSurface.html'),
         surfaceEvolverCatenoid: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverCatenoid.html'),
-        surfaceEvolverHNCusp: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverHNCusp.html'),
+        surfaceEvolverPcell: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolverPcell.html'),
       }
     }
   }
