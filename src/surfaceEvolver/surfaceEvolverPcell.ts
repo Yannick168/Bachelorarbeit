@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import defaultFeUrl from './pcell_finished.fe?url';
+import defaultFeUrl from './catenoid_finished.fe?url';
 
 // ====================== Grundsetup ======================
 const scene = new THREE.Scene();
@@ -41,7 +41,7 @@ type ParsedFace = {
 const SEC_MARK = /^(vertices|edges|faces|facets|bodies)\b/i;
 const isInt = (s: string) => /^[+-]?\d+$/.test(s);
 const isSignedInt = (s: string) => /^-?\d+$/.test(s);
-const isFloat = (s: string) => /^[+-]?(?:\d*\.\d+|\d+\.\d*|\d+)(?:[eE][+-]?\d+)?$/.test(s);
+const isFloat = (s: string) => /^[+-]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?$/.test(s);
 
 // Kommentare (/* ... */) entfernen – NUR für Stellen, wo wir sie nicht brauchen.
 // Beim Vertex-Parsing greifen wir vorher auf den Original-String zu!
@@ -125,7 +125,6 @@ function parseFEFile(content: string): {
       }
 
       // 3) Boundary-Fallback (wenn Kommentar fehlt)
-      // Muster: "<id> <P1> boundary <num> ..."
       const noCom2 = stripComment(raw);
       if (noCom2) {
         const p = noCom2.split(/\s+/);
@@ -143,7 +142,6 @@ function parseFEFile(content: string): {
           }
         }
       }
-      // alles andere ignorieren (Kommentare, leere Zeilen, etc.)
     }
   } else {
     // Heuristik (für Dumps ohne 'vertices'-Header)
@@ -179,7 +177,6 @@ function parseFEFile(content: string): {
         const v1 = vertexIdToIndex[v1Id];
         const v2 = vertexIdToIndex[v2Id];
         if (v1 === undefined || v2 === undefined) {
-          // console.warn('Edge verworfen (unbekannter Vertex):', eid, v1Id, v2Id);
           continue;
         }
         edgesById[eid] = [v1, v2];
@@ -202,15 +199,14 @@ function parseFEFile(content: string): {
       const ln = stripComment(raw);
       const p = ln.split(/\s+/);
       if (p.length >= 3 && isInt(p[0]) && isInt(p[1]) && isInt(p[2])) {
-        // 4er-Matrixzeilen wie "1 0 0 0" ausschließen
-        if (p.length >= 4 && isInt(p[3])) continue;
+        if (p.length >= 4 && isInt(p[3])) continue; // Matrix-Zeilen ausschließen
         edgeLines.push(ln);
       }
     }
     parseEdgesBlock(edgeLines);
   }
 
-  // ---- Faces: robustes Rekonstruieren + Triangulation ----
+  // ---- Faces: robust + „Catenoid-kompatibler“ Dreiecksmodus ----
   const faces: ParsedFace[] = [];
   const faceStarts = [...(indices.faces || []), ...(indices.facets || [])];
 
@@ -226,7 +222,7 @@ function parseFEFile(content: string): {
       if (p.length >= 4 && isInt(p[0]) && isSignedInt(p[1]) && isSignedInt(p[2]) && isSignedInt(p[3])) {
         const faceId = parseInt(p[0], 10);
 
-        // sammle ALLE signierten Edge-IDs
+        // ALLE signierten Edge-IDs einsammeln
         const signed: number[] = [];
         for (let k = 1; k < p.length; k++) {
           if (isSignedInt(p[k])) signed.push(parseInt(p[k], 10));
@@ -234,59 +230,68 @@ function parseFEFile(content: string): {
         }
         if (signed.length < 3) continue;
 
-        // orientierte Kanten zusammenstellen (Signum beachten)
+        // orientierte Kanten (unter Berücksichtigung des Vorzeichens)
         const oriented: Array<[number, number]> = [];
-        const basePairs: Array<[number, number]> = []; // unorientiert, nur zur Nachbarschaft
+        const basePairs: Array<[number, number]> = [];
         let ok = true;
-        for (const eidSigned of signed) {
-          const base = Math.abs(eidSigned);
+        for (const sid of signed) {
+          const base = Math.abs(sid);
           const e = edgesById[base];
           if (!e) { ok = false; break; }
           basePairs.push([e[0], e[1]]);
-          oriented.push(eidSigned < 0 ? [e[1], e[0]] : [e[0], e[1]]);
+          oriented.push(sid < 0 ? [e[1], e[0]] : [e[0], e[1]]);
         }
-        if (!ok) continue;
+        if (!ok || !oriented.length) continue;
 
-        // Menge der beteiligten Vertices
+        // ====== 1) Schneller Weg für Dreiecke (wie in surfaceEvolverCatenoid.ts) ======
+        // „Startvertex“ jeder orientierten Kante = erstes Element des Paares
+        if (signed.length === 3) {
+          const triCandidate: [number, number, number] = [
+            oriented[0][0],
+            oriented[1][0],
+            oriented[2][0],
+          ];
+          if (new Set(triCandidate).size === 3) {
+            faces.push({ faceId, edgeIds: signed, tris: [triCandidate] });
+            continue; // fertig
+          }
+          // falls degeneriert, unten weiter mit dem robusten Modus
+        }
+
+        // ====== 2) Robuster Modus ======
+        // Anzahl verschiedener Vertices bestimmen
         const vertsSet = new Set<number>();
         for (const [a, b] of oriented) { vertsSet.add(a); vertsSet.add(b); }
         const uniqueVerts = [...vertsSet];
 
-        // ====== Fall A: genau 3 verschiedene Vertices -> robustes Dreieck ======
+        // a) genau 3 verschiedene Vertices -> bestmögliche Orientierung wählen
         if (uniqueVerts.length === 3) {
-          // undirected adjacency
+          // Undirected adjacency
           const adj = new Map<number, Set<number>>();
           for (const [a, b] of basePairs) {
             if (!adj.has(a)) adj.set(a, new Set());
             if (!adj.has(b)) adj.set(b, new Set());
             adj.get(a)!.add(b); adj.get(b)!.add(a);
           }
-
           const v0 = uniqueVerts[0];
           const ns = [...(adj.get(v0) ?? [])];
-          if (ns.length !== 2) continue; // degeneriert
+          if (ns.length !== 2) continue;
           const [n1, n2] = ns;
 
-          // Orientierung wählen, die bestmöglich zu den gerichteten Kanten passt
+          // An den gerichteten Kanten ausrichten
           const oset = new Set(oriented.map(([a, b]) => edgeKey(a, b)));
-          const candidate1: [number, number, number] = [v0, n1, n2];
-          const candidate2: [number, number, number] = [v0, n2, n1];
-          const score = (tri: [number, number, number]) => {
-            let s = 0;
-            if (oset.has(edgeKey(tri[0], tri[1]))) s++;
-            if (oset.has(edgeKey(tri[1], tri[2]))) s++;
-            if (oset.has(edgeKey(tri[2], tri[0]))) s++;
-            return s;
-          };
-          const t1 = score(candidate1);
-          const t2 = score(candidate2);
-          const tri = (t2 > t1) ? candidate2 : candidate1;
+          const cand1: [number, number, number] = [v0, n1, n2];
+          const cand2: [number, number, number] = [v0, n2, n1];
+          const score = (tri: [number, number, number]) =>
+            (oset.has(edgeKey(tri[0], tri[1])) ? 1 : 0) +
+            (oset.has(edgeKey(tri[1], tri[2])) ? 1 : 0) +
+            (oset.has(edgeKey(tri[2], tri[0])) ? 1 : 0);
 
-          faces.push({ faceId, edgeIds: signed, tris: [tri] });
+          faces.push({ faceId, edgeIds: signed, tris: [score(cand2) > score(cand1) ? cand2 : cand1] });
           continue;
         }
 
-        // ====== Fall B: Polygon (>3 Kanten) -> robustes Ketten-Chaining (Multi-Map) ======
+        // b) Polygon (>3 Kanten) -> Kettenbildung (Multi-Map) und Fan-Triangulation
         const nextMulti = new Map<number, number[]>();
         const inDeg = new Map<number, number>();
         const outDeg = new Map<number, number>();
@@ -300,7 +305,7 @@ function parseFEFile(content: string): {
           if (!outDeg.has(t)) outDeg.set(t, outDeg.get(t) ?? 0);
         }
 
-        // Startknoten wählen: einer mit outDeg > inDeg, sonst beliebig
+        // Startknoten mit outDeg>inDeg bevorzugen
         let startV = uniqueVerts[0];
         for (const v of uniqueVerts) {
           const inde = inDeg.get(v) ?? 0;
@@ -308,7 +313,6 @@ function parseFEFile(content: string): {
           if (out > inde) { startV = v; break; }
         }
 
-        // chain laufen, dabei Kanten konsumieren
         const seq: number[] = [startV];
         let cur = startV;
         const totalEdges = oriented.length;
@@ -317,20 +321,19 @@ function parseFEFile(content: string): {
         while (steps++ < totalEdges + 5) {
           const outs = nextMulti.get(cur) ?? [];
           if (outs.length) {
-            const nxt = outs.shift()!; // konsumiere eine Kante
+            const nxt = outs.shift()!;
             seq.push(nxt);
             cur = nxt;
-            if (cur === startV) break; // geschlossen
+            if (cur === startV) break;
           } else {
-            // Notfall: Suche eine Kante, die in cur hineinführt, und „drehe“ sie,
-            // um die Kette fortsetzen zu können (letzter Ausweg)
+            // letzter Ausweg: Kante umdrehen, um den Loop schließen zu können
             let fixed = false;
             for (const [k, arr] of nextMulti) {
               const j = arr.indexOf(cur);
               if (j >= 0) {
-                arr.splice(j, 1);               // entferne k->cur
+                arr.splice(j, 1);
                 if (!nextMulti.has(cur)) nextMulti.set(cur, []);
-                nextMulti.get(cur)!.push(k);    // ersetze durch cur->k
+                nextMulti.get(cur)!.push(k);
                 const nxt = k;
                 seq.push(nxt);
                 cur = nxt;
@@ -345,7 +348,6 @@ function parseFEFile(content: string): {
         if (seq.length >= 2 && seq[0] === seq[seq.length - 1]) seq.pop();
         if (new Set(seq).size < 3) continue;
 
-        // Triangulation (Fan)
         const tris: [number, number, number][] = [];
         for (let i = 1; i < seq.length - 1; i++) {
           const t: [number, number, number] = [seq[0], seq[i], seq[i + 1]];
