@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import defaultFeUrl from './catenoid_finished.fe?url';
+import defaultFeUrl from './pcell_finished.fe?url';
 
 // ====================== Grundsetup ======================
 const scene = new THREE.Scene();
