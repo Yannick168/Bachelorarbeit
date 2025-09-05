@@ -71,11 +71,10 @@ function program(gl: GL, vs: string, fs: string){
   return p;
 }
 
-function createCube(gl: GL, prog: WebGLProgram){
-  const r = HALF;
+function createCube(gl: GL, prog: WebGLProgram, H: number){
   const v = new Float32Array([
-    -r,-r,-r,  r,-r,-r,  -r, r,-r,   r, r,-r,
-    -r,-r, r,  r,-r, r,  -r, r, r,   r, r, r
+    -H,-H,-H,  H,-H,-H,  -H, H,-H,   H, H,-H,
+    -H,-H, H,  H,-H, H,  -H, H, H,   H, H, H
   ]);
   const i = new Uint16Array([
     0,2,1, 1,2,3,   // -Z
@@ -130,7 +129,7 @@ function init(): Ctx {
   const prog = program(gl, vsSource, fsSource);
   gl.useProgram(prog);
 
-  const { vao, iboSize } = createCube(gl, prog);
+  const { vao, iboSize } = createCube(gl, prog, HALF);
 
   const aspect = canvas.width / canvas.height;
   let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = makePerspective(aspect);

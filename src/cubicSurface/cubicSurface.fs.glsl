@@ -5,7 +5,7 @@ in vec3 vUV;
 
 uniform mat4  uModelInverse;
 uniform int   uOrthographic;
-uniform int   uSurface;          // bleibt vorhanden
+uniform int   uSurface;          
 uniform float uCoeffs[20];
 
 uniform bool  uShowAxes;
@@ -22,19 +22,19 @@ const float EPS = 1e-4;
 float sqr(float x)  { return x * x; }
 float cube(float x) { return x * x * x; }
 
-// -------- dein Solver (GLSLisiert, keine f-Suffixe) --------------------------
+// -------- Cubic Solver --------------------------
 float sgn(float x) {
-  return (x < 0.0) ? -1.0 : 1.0; // Return +1 für x==0
+  return x < 0.0f ? -1.0f : 1.0f; // Return 1 for x == 0
 }
 
 int quadratic(float A, float B, float C, out vec2 res) {
   float x1, x2;
-  float b = -0.5 * B;
+  float b = -0.5f * B;
   float q = b * b - A * C;
-  if (q < 0.0)
+  if(q < 0.0f)
     return 0;
   float r = b + sgn(b) * sqrt(q);
-  if (r == 0.0) {
+  if(r == 0.0f) {
     x1 = C / A;
     x2 = -x1;
   } else {
@@ -46,45 +46,53 @@ int quadratic(float A, float B, float C, out vec2 res) {
 }
 
 void eval(
-  float X, float A, float B, float C, float D,
-  out float Q, out float Q1, out float B1, out float C2
+  float X,
+  float A,
+  float B,
+  float C,
+  float D,
+  out float Q,
+  out float Q1,
+  out float B1,
+  out float C2
 ) {
   float q0 = A * X;
   B1 = q0 + B;
   C2 = B1 * X + C;
   Q1 = (q0 + B1) * X + C2;
-  Q  = C2 * X + D;
+  Q = C2 * X + D;
 }
 
-// Solve: A*x^3 + B*x^2 + C*x + D == 0
-// Findet eine reelle Wurzel, dann Reduktion auf Quadratik.
+// Solve: Ax^3 + Bx^2 + Cx + D == 0
+// Find one real root, then reduce to quadratic.
 int cubic(float A, float B, float C, float D, out vec3 res) {
   float X, b1, c2;
-  if (A == 0.0) {
-    X  = 1e8;
-    A  = B;
+  if (A == 0.0f) {
+    X = 1e8f;
+    A = B;
     b1 = C;
     c2 = D;
-  } else if (D == 0.0) {
-    X  = 0.0;
+  } else if (D == 0.0f) {
+    X = 0.0f;
     b1 = B;
     c2 = C;
   } else {
-    X = -(B / A) / 3.0;
+    X = -(B / A) / 3.0f;
     float t, r, s, q, dq, x0;
     eval(X, A, B, C, D, q, dq, b1, c2);
     t = q / A;
-    r = pow(abs(t), 1.0/3.0);   // Basis ist abs(t) >= 0 → safe
+    r = pow(abs(t), 1.0f / 3.0f);
     s = sgn(t);
     t = -dq / A;
-    if (t > 0.0)
-      r = 1.324718 * max(r, sqrt(t));
+    if (t > 0.0f)
+      r = 1.324718f * max(r, sqrt(t));
     x0 = X - s * r;
     if (x0 != X) {
-      for (int i = 0; i < 6; i++) {
+      for(int i = 0; i < 6; i++) {
         X = x0;
         eval(X, A, B, C, D, q, dq, b1, c2);
-        if (dq == 0.0) break;
+        if (dq == 0.0f)
+          break;
         x0 -= (q / dq);
       }
       if (abs(A) * X * X > abs(D / X)) {
@@ -96,19 +104,26 @@ int cubic(float A, float B, float C, float D, out vec3 res) {
   res.x = X;
   return 1 + quadratic(A, b1, c2, res.yz);
 }
-
 // -------- ray / aabb ---------------------------------------------------------
 bool rayAABB(vec3 ro, vec3 rd, float h, out float tEnter, out float tExit) {
+  // Inverse Richtungen (für Division durch rd)
   vec3 invD = 1.0 / rd;
+
+  // Schnittpunkte mit den beiden Ebenen jeder Achse (-h, +h)
   vec3 t0 = (vec3(-h) - ro) * invD;
   vec3 t1 = (vec3( h) - ro) * invD;
+
+  // Für jede Achse das kleinere (tmin) und größere (tmax) nehmen
   vec3 tmin = min(t0, t1);
   vec3 tmax = max(t0, t1);
+
+  // Eintritts- und Austrittsparameter
   tEnter = max(max(tmin.x, tmin.y), tmin.z);
   tExit  = min(min(tmax.x, tmax.y), tmax.z);
+
+  // Ray trifft AABB, wenn Austritt hinter Eintritt liegt und vorwärts (t>0)
   return tExit > max(tEnter, 0.0);
 }
-
 // -------- gradient / normals (ohne pow) --------------------------------------
 vec3 cubicSurfaceNormal(vec3 p, float coeffs[20]) {
   float c300 = coeffs[0];
