@@ -1,0 +1,82 @@
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12 col-md-4 mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    Hypotrochoid
+                </h3>
+            </div>
+            $${\displaystyle {\begin{aligned}&amp;x(\theta )=(R-r)\cos \theta +d\cos \left({R-r \over r}\theta \right)\\&amp;y(\theta )=(R-r)\sin \theta -d\sin \left({R-r \over r}\theta
+            \right)\end{aligned}}}$$
+            <div class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                    <label for="hypotrochoidInputR" class="form-label">Großer Radius R</label> <input type="number" id="hypotrochoidInputR" class="form-control" value="4" min="0.1" step="0.1" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="hypotrochoidInputr" class="form-label">Kleiner Radius r</label> <input type="number" id="hypotrochoidInputr" class="form-control" value="1" min="0.1" step="0.1" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="hypotrochoidInputd" class="form-label">Abstand d</label> <input type="number" id="hypotrochoidInputd" class="form-control" value="1" min="0.1" step="0.1" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="hypotrochoidSlider" class="form-label">Position t [0, 6π]</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="hypotrochoidSlider" class="form-range" min="0" max="18.85" step="0.01" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 6rem;">
+                            <input type="number" id="hypotrochoidTInput" class="form-control" min="0" max="18.85" step="0.01" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
+            <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
+                <iframe id="hypotrochoidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="hypotrochoidFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+  const hypotrochoidFrame = document.getElementById('hypotrochoidFrame');
+    hypotrochoidFrame.src = "https://yannick168.github.io/Bachelorarbeit/src/hypotrochoid/hypotrochoid.html?v=" + Date.now();
+
+  function sendHypotrochoidUpdate() {
+    const t = parseFloat(document.getElementById('hypotrochoidTInput').value);
+    const R = parseFloat(document.getElementById('hypotrochoidInputR').value);
+    const r = parseFloat(document.getElementById('hypotrochoidInputr').value);
+    const d = parseFloat(document.getElementById('hypotrochoidInputd').value);
+
+    if (!isNaN(t) && !isNaN(R) && !isNaN(r) && !isNaN(d)) {
+      hypotrochoidFrame.contentWindow?.postMessage({ type: 'updateHypotrochoid', t, R, r, d }, '*');
+    }
+  }
+
+  function syncHypotrochoidSlider(sliderId, inputId) {
+    const slider = document.getElementById(sliderId);
+    const input = document.getElementById(inputId);
+
+    slider.addEventListener('input', () => {
+      input.value = slider.value;
+      sendHypotrochoidUpdate();
+    });
+
+    input.addEventListener('input', () => {
+      slider.value = input.value;
+      sendHypotrochoidUpdate();
+    });
+  }
+
+  syncHypotrochoidSlider('hypotrochoidSlider', 'hypotrochoidTInput');
+  document.getElementById('hypotrochoidInputR').addEventListener('input', sendHypotrochoidUpdate);
+  document.getElementById('hypotrochoidInputr').addEventListener('input', sendHypotrochoidUpdate);
+  document.getElementById('hypotrochoidInputd').addEventListener('input', sendHypotrochoidUpdate);
+/*]]>*/
+</script>
