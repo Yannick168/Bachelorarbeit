@@ -1,0 +1,85 @@
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Cycloid
+            </h3>
+        </div>
+        $$ x_p(\theta) = (\theta + sin(\theta))R $$ $$ y_p(\theta) = (1 + sin(\theta))R $$
+        <div class="col-12 col-md-4 mb-4">
+            <div class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                    <label for="cycloidDistanceInput" class="form-label">Abstand zum Mittelpunkt</label> <input type="number" id="cycloidDistanceInput" class="form-control" value="1" min="0" step=
+                    "0.01" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="cycloidAngleSlider" class="form-label">Punktwinkel θ (in Grad)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="cycloidAngleSlider" class="form-range" min="0" max="360" step="1" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 5rem;">
+                            <input type="number" id="cycloidThetaInput" class="form-control" min="0" max="360" step="1" value="0" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cycloidSlider" class="form-label">Position t [0, 4π]</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="cycloidSlider" class="form-range" min="0" max="12.56" step="0.01" value="0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 6rem;">
+                            <input type="number" id="cycloidTInput" class="form-control" min="0" max="12.56" step="0.01" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
+            <div class="ratio ratio-16x9" style="max-width: 700px; width: 100%;">
+                <iframe id="cycloidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="cycloidFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+  const cycloidIframe = document.getElementById('cycloidFrame');
+  cycloidIframe.src = "https://yannick168.github.io/Bachelorarbeit/src/cycloid/cycloid.html?v=" + Date.now();
+
+  function sendCycloidUpdate() {
+    const t = parseFloat(document.getElementById('cycloidTInput').value);
+    const theta = parseFloat(document.getElementById('cycloidThetaInput').value);
+    const distance = parseFloat(document.getElementById('cycloidDistanceInput').value);
+
+    if (cycloidIframe && !isNaN(t) && !isNaN(theta) && !isNaN(distance)) {
+      cycloidIframe.contentWindow.postMessage({ type: 'update', t, theta, distance }, '*');
+    }
+  }
+
+  function syncCycloidSlider(sliderId, inputId) {
+    const slider = document.getElementById(sliderId);
+    const input = document.getElementById(inputId);
+
+    slider.addEventListener('input', () => {
+      input.value = slider.value;
+      sendCycloidUpdate();
+    });
+
+    input.addEventListener('input', () => {
+      slider.value = input.value;
+      sendCycloidUpdate();
+    });
+  }
+
+  syncCycloidSlider('cycloidSlider', 'cycloidTInput');
+  syncCycloidSlider('cycloidAngleSlider', 'cycloidThetaInput');
+  document.getElementById('cycloidDistanceInput').addEventListener('input', sendCycloidUpdate);
+/*]]>*/
+</script>

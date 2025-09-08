@@ -124,3 +124,16 @@ animate();
   createSceneObjects();
   updateScene(t);
 };
+
+// Zoom mit Mausrad
+canvas.addEventListener('wheel', (event) => {
+  event.preventDefault();
+
+  if (event.deltaY < 0) {
+    camera.zoom *= 1.1; // reinzoomen
+  } else {
+    camera.zoom /= 1.1; // rauszoomen
+  }
+
+  camera.updateProjectionMatrix();
+});
