@@ -8,8 +8,6 @@ export default defineConfig({
     outDir: 'docs',
     rollupOptions: {
       input: {
-        triangle: resolve(__dirname, 'src/triangle/index.html'),
-        surface_01: resolve(__dirname, 'parametricSurface_01.html'),
         catenoid: resolve(__dirname, 'src/catenoid/catenoid.html'),
         catenoidHelicoid: resolve(__dirname, 'src/catenoidHelicoid/catenoidHelicoid.html'),
         cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
