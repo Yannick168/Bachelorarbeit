@@ -159,7 +159,7 @@ window.addEventListener("message", (ev: MessageEvent) => {
   const msg = ev.data;
   if (!msg || typeof msg !== "object") return;
   if (msg.type === "update") {
-    if (typeof msg.c === "number")         params.c = Math.max(0.05, msg.a);
+    if (typeof msg.c === "number")         params.c = Math.max(0.05, msg.c);
     if (typeof msg.vMin === "number")      params.vMin = msg.vMin;
     if (typeof msg.vMax === "number")      params.vMax = msg.vMax;
     if (typeof msg.uSegments === "number") params.uSegments = Math.max(4, Math.floor(msg.uSegments));
