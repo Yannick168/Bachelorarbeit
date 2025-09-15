@@ -21,50 +21,190 @@
             <p class="mb-2 fw-semibold">
                 Parametric representation
             </p>
-            $$ \mathbf{x}(u,v) = \bigl( a\,\cosh(\tfrac{v}{a})\cos u,\; a\,\cosh(\tfrac{v}{a})\sin u,\; v \bigr), \quad u \in [0,2\pi), \; v \in \mathbb{R}. $$
-            <p class="mb-2 fw-semibold">
-                Rotational / implicit form
-            </p>
-            $$ r(z) \;=\; a\,\cosh\!\Bigl(\tfrac{z}{a}\Bigr), \qquad x^2 + y^2 \;=\; a^2\,\cosh^2\!\Bigl(\tfrac{z}{a}\Bigr). $$
-            <p class="mb-2 fw-semibold">
-                Property
-            </p>
-
-            <p class="mb-0">
-                The catenoid is a <em>minimal surface</em>, i.e. the mean curvature vanishes everywhere: \( H \equiv 0 \).
-            </p>
+            $$ \mathbf{x}(u,v) = \bigl( c\,\cosh(\tfrac{v}{c})\cos u,\; c\,\cosh(\tfrac{v}{c})\sin u,\; v \bigr), \quad u \in [0,2\pi), \; v \in \mathbb{R}. $$
         </div>
-    </div>
-    <!-- iFrame -->
+        <!-- Sliders + iFrame + Controls -->
 
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="ratio ratio-16x9">
-                <iframe src="https://yannick168.github.io/Bachelorarbeit/src/catenoid/catenoid.html" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen"></iframe>
+        <div class="row mt-4">
+            <!-- Sliders -->
+
+            <div class="col-12 col-lg-5 mb-4">
+                <div class="p-3 bg-white rounded shadow-sm">
+                    <!-- c (waist radius) -->
+
+                    <div class="mb-3">
+                        <label for="c-a" class="form-label">Waist radius \(a\)</label>
+                        <div class="row gx-2 align-items-center">
+                            <div class="col">
+                                <input type="range" id="c-c" class="form-range" min="0.2" max="3" step="0.01" value="1.00" />
+                            </div>
+
+                            <div class="col-auto" style="width: 7rem;">
+                                <input type="number" id="c-c-num" class="form-control" min="0.2" max="3" step="0.01" value="1.00" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- v half range (L): v in [-L, L] -->
+
+                    <div class="mb-3">
+                        <label for="c-vh" class="form-label">Half length \(L\) with \(v\in[-L,L]\)</label>
+                        <div class="row gx-2 align-items-center">
+                            <div class="col">
+                                <input type="range" id="c-vh" class="form-range" min="0.5" max="6" step="0.1" value="2.0" />
+                            </div>
+
+                            <div class="col-auto" style="width: 7rem;">
+                                <input type="number" id="c-vh-num" class="form-control" min="0.5" max="6" step="0.1" value="2.0" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Resolution: segments -->
+
+                    <div class="mb-3">
+                        <label for="c-us" class="form-label">\(u\)-segments</label>
+                        <div class="row gx-2 align-items-center">
+                            <div class="col">
+                                <input type="range" id="c-us" class="form-range" min="8" max="128" step="1" value="30" />
+                            </div>
+
+                            <div class="col-auto" style="width: 7rem;">
+                                <input type="number" id="c-us-num" class="form-control" min="8" max="128" step="1" value="30" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="c-vs" class="form-label">\(v\)-segments</label>
+                        <div class="row gx-2 align-items-center">
+                            <div class="col">
+                                <input type="range" id="c-vs" class="form-range" min="8" max="128" step="1" value="30" />
+                            </div>
+
+                            <div class="col-auto" style="width: 7rem;">
+                                <input type="number" id="c-vs-num" class="form-control" min="8" max="128" step="1" value="30" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- iFrame + Controls (right column) -->
+
+            <div class="col-12 col-lg-7">
+                <div class="d-flex justify-content-center align-items-center mb-3">
+                    <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
+                        <iframe id="catenoidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="catenoidFrame"></iframe>
+                    </div>
+                </div>
+                <!-- Controls directly under iFrame (left-aligned) -->
+
+                <div>
+                    <h5 class="mb-2">
+                        Controls
+                    </h5>
+
+                    <ul class="mb-0">
+                        <li>
+                            <strong>Left mouse button drag</strong>: Rotate scene
+                        </li>
+
+                        <li>
+                            <strong>Right mouse button drag</strong>: Pan
+                        </li>
+
+                        <li>
+                            <strong>Mouse wheel scroll</strong>: Zoom
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-    <!-- Controls (no border) -->
+    <script>
+    /* <![CDATA[ */
+    const frame = document.getElementById('catenoidFrame');
+    frame.src = "https://yannick168.github.io/Bachelorarbeit/src/catenoid/catenoid.html?v=" + Date.now();
 
-    <div class="row mt-3">
-        <div class="col-12 col-lg-8">
-            <h5 class="mb-2">
-                Controls
-            </h5>
+    const els = {
+    a:      document.getElementById('c-c'),
+    aNum:   document.getElementById('c-c-num'),
+    L:      document.getElementById('c-vh'),
+    LNum:   document.getElementById('c-vh-num'),
+    us:     document.getElementById('c-us'),
+    usNum:  document.getElementById('c-us-num'),
+    vs:     document.getElementById('c-vs'),
+    vsNum:  document.getElementById('c-vs-num'),
+    };
 
-            <ul class="mb-0">
-                <li>
-                    <strong>Left mouse button drag</strong>: Rotate scene
-                </li>
+    // ---- helpers ----
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    const midpoint = (min, max) => (parseFloat(min) + parseFloat(max)) / 2;
+    const decimalsFromStep = (stepStr) => {
+    const s = String(stepStr ?? "");
+    return s.includes(".") ? s.split(".")[1].length : 0;
+    };
+    const roundToStep = (value, min, step) => {
+    const k = Math.round((value - min) / step);
+    return min + k * step;
+    };
+    const debounce = (fn, ms=60) => {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+    };
 
-                <li>
-                    <strong>Right mouse button drag</strong>: Pan
-                </li>
+    const postUpdate = debounce(() => {
+    const c  = parseFloat(els.aNum.value);
+    const L  = parseFloat(els.LNum.value);
+    const us = parseInt(els.usNum.value, 10);
+    const vs = parseInt(els.vsNum.value, 10);
+    if (!isFinite(c) || !isFinite(L) || !isFinite(us) || !isFinite(vs)) return;
 
-                <li>
-                    <strong>Mouse wheel scroll</strong>: Zoom
-                </li>
-            </ul>
-        </div>
-    </div>
+    frame.contentWindow.postMessage({
+      type: 'update',
+      c,
+      vMin: -L,
+      vMax:  L,
+      uSegments: us,
+      vSegments: vs
+    }, '*');
+    }, 50);
+
+    // Bind Range <-> Number
+    function bindPair(rangeEl, numEl, { integers=false } = {}) {
+    const min = parseFloat(rangeEl.min);
+    const max = parseFloat(rangeEl.max);
+    const step = parseFloat(rangeEl.step || (integers ? "1" : "0.01"));
+    const decs = integers ? 0 : decimalsFromStep(step);
+
+    // Range -> Number (live sync)
+    rangeEl.addEventListener('input', () => {
+      numEl.value = integers ? String(parseInt(rangeEl.value, 10)) : Number(rangeEl.value).toFixed(decs);
+      postUpdate();
+    });
+
+    // Number -> Range (use value; slider snaps to middle)
+    const applyNumber = () => {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) return;
+      v = clamp(v, min, max);
+      v = integers ? Math.round(v) : roundToStep(v, min, step);
+      numEl.value = integers ? String(v) : v.toFixed(decs);
+
+      // Slider to visual center (thumb position)
+      rangeEl.value = midpoint(rangeEl.min, rangeEl.max);
+
+      postUpdate();
+    };
+    numEl.addEventListener('input',  applyNumber);
+    numEl.addEventListener('change', applyNumber);
+    numEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyNumber(); });
+    }
+
+    bindPair(els.c,  els.aNum,  { integers:false });
+    bindPair(els.L,  els.LNum,  { integers:false });
+    bindPair(els.us, els.usNum, { integers:true  });
+    bindPair(els.vs, els.vsNum, { integers:true  });
+
+    // initial update
+    window.addEventListener('load', () => setTimeout(()=>postUpdate(), 300));
+    /*]]>*/
+    </script>
 </div>

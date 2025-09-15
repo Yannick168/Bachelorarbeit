@@ -36,7 +36,7 @@ controls.target.set(0, 0, 0);
 
 // ---------- Parameters ----------
 type CatenoidParams = {
-  a: number;        // waist radius
+  c: number;        // waist radius
   vMin: number;     // lower v bound
   vMax: number;     // upper v bound
   uSegments: number;
@@ -44,7 +44,7 @@ type CatenoidParams = {
 };
 
 let params: CatenoidParams = {
-  a: 1.0,
+  c: 1.0,
   vMin: -2.0,
   vMax:  2.0,
   uSegments: 30,
@@ -71,7 +71,7 @@ let wireframe: THREE.LineSegments<THREE.WireframeGeometry, THREE.LineBasicMateri
 
 // ---------- Geometry builder ----------
 function makeGeometry(p: CatenoidParams): THREE.BufferGeometry {
-  const { a, vMin, vMax, uSegments, vSegments } = p;
+  const { c, vMin, vMax, uSegments, vSegments } = p;
 
   const positions: number[] = [];
   const colors: number[] = [];
@@ -80,7 +80,7 @@ function makeGeometry(p: CatenoidParams): THREE.BufferGeometry {
   for (let j = 0; j <= vSegments; j++) {
     const t = j / vSegments;                   // 0..1 along v
     const v = vMin + (vMax - vMin) * t;
-    const R = a * Math.cosh(v / a);            // r(z) = a cosh(z/a)
+    const R = c * Math.cosh(v / c);            // r(z) = c cosh(z/c)
 
     for (let i = 0; i <= uSegments; i++) {
       const u = 2 * Math.PI * (i / uSegments); // 0..2π
@@ -159,7 +159,7 @@ window.addEventListener("message", (ev: MessageEvent) => {
   const msg = ev.data;
   if (!msg || typeof msg !== "object") return;
   if (msg.type === "update") {
-    if (typeof msg.a === "number")         params.a = Math.max(0.05, msg.a);
+    if (typeof msg.c === "number")         params.c = Math.max(0.05, msg.a);
     if (typeof msg.vMin === "number")      params.vMin = msg.vMin;
     if (typeof msg.vMax === "number")      params.vMax = msg.vMax;
     if (typeof msg.uSegments === "number") params.uSegments = Math.max(4, Math.floor(msg.uSegments));
