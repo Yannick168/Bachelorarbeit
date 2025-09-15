@@ -10,7 +10,7 @@ export default defineConfig({
       input: {
         catenoid: resolve(__dirname, 'src/catenoid/catenoid.html'),
         catenoidHelicoid: resolve(__dirname, 'src/catenoidHelicoid/catenoidHelicoid.html'),
-        cycloid: resolve(__dirname, 'src/cycloid/cycloid.html'),
+        trochoid: resolve(__dirname, 'src/trochoid/trochoid.html'),
         epitrochoid: resolve(__dirname, 'src/epitrochoid/epitrochoid.html'),
         hypotrochoid: resolve(__dirname, 'src/hypotrochoid/hypotrochoid.html'),
         surfaceEvolver: resolve(__dirname, 'src/surfaceEvolver/surfaceEvolver.html'),
