@@ -15,8 +15,8 @@
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data?.type === "updateEpitrochoid") {
-        const { t, R, r, d } = data;
-        window.updateEpitrochoid?.(t, R, r, d);
+        const { theta, R, r, d } = data;
+        window.updateEpitrochoid?.(theta, R, r, d);
       }
     });
   </script>

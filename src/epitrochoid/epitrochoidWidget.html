@@ -4,33 +4,49 @@
 <script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script> 
 <script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload=
 "renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
-
 <div class="container my-4">
     <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Epitrochoid
+            </h3>
+        </div>
+        <!-- Formulas -->
+
+        <div class="col-12 col-lg-10">
+            <p class="mb-2 fw-semibold">
+                Epitrochoid (point at distance \( d \) on a circle of radius \( r \) rolling outside a fixed circle of radius \( R \))
+            </p>
+            $$ x(\theta) = (R+r)\cos\theta - d\cos\!\left(\frac{R+r}{r}\,\theta\right),\qquad y(\theta) = (R+r)\sin\theta - d\sin\!\left(\frac{R+r}{r}\,\theta\right). $$
+            <p class="mb-2 fw-semibold">
+                Special case (epicycloid, \( d=r \))
+            </p>
+            $$ x(\theta) = (R+r)\cos\theta - r\cos\!\left(\frac{R+r}{r}\,\theta\right),\qquad y(\theta) = (R+r)\sin\theta - r\sin\!\left(\frac{R+r}{r}\,\theta\right). $$
+            <p class="mb-0">
+                In the viewer below, the path parameter is \( t \) (interpreted like \( \theta \)).
+            </p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Controls (left) -->
+
         <div class="col-12 col-md-4 mb-4">
-            <div class="col-12">
-                <h3 class="mb-3">
-                    Epitrochoid
-                </h3>
-            </div>
-            
             <div class="p-3 bg-white rounded shadow-sm">
-                            $${\displaystyle {\begin{aligned}&amp;x(\theta )=(R+r)\cos \theta -d\cos \left({R+r \over r}\theta \right)\\&amp;y(\theta )=(R+r)\sin \theta -d\sin \left({R+r \over r}\theta
-            \right)\end{aligned}}}$$
                 <div class="mb-3">
-                    <label for="epitrochoidInputR" class="form-label">Großer Radius R</label> <input type="number" id="epitrochoidInputR" class="form-control" value="1" min="0.1" step="0.1" />
+                    <label for="epitrochoidInputR" class="form-label">Large radius \( R \)</label> <input type="number" id="epitrochoidInputR" class="form-control" value="1.0" min="0.1" step="0.1" />
                 </div>
 
                 <div class="mb-3">
-                    <label for="epitrochoidInputr" class="form-label">Kleiner Radius r</label> <input type="number" id="epitrochoidInputr" class="form-control" value="1" min="0.1" step="0.1" />
+                    <label for="epitrochoidInputr" class="form-label">Small radius \( r \)</label> <input type="number" id="epitrochoidInputr" class="form-control" value="1.0" min="0.1" step="0.1" />
                 </div>
 
                 <div class="mb-3">
-                    <label for="epitrochoidInputd" class="form-label">Abstand d</label> <input type="number" id="epitrochoidInputd" class="form-control" value="1" min="0.1" step="0.1" />
+                    <label for="epitrochoidInputd" class="form-label">Offset \( d \)</label> <input type="number" id="epitrochoidInputd" class="form-control" value="1.0" min="0" step="0.01" />
                 </div>
 
-                <div class="mb-3">
-                    <label for="epitrochoidSlider" class="form-label">Position t [0, 6π]</label>
+                <div class="mb-0">
+                    <label for="epitrochoidSlider" class="form-label">Position \( \theta \in [0,\,6\pi] \)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidSlider" class="form-range" min="0" max="18.85" step="0.01" value="0" />
@@ -43,6 +59,7 @@
                 </div>
             </div>
         </div>
+        <!-- iFrame (right) -->
 
         <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
             <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
@@ -53,38 +70,44 @@
 </div>
 <script>
 /* <![CDATA[ */
-  const epitrochoidFrame = document.getElementById('epitrochoidFrame');
-  epitrochoidFrame.src = "https://yannick168.github.io/Bachelorarbeit/src/epitrochoid/epitrochoid.html?v=" + Date.now();
+  // Run after DOM is ready (more robust on site builders)
+  window.addEventListener('DOMContentLoaded', () => {
+    const epitrochoidFrame = document.getElementById('epitrochoidFrame');
+    epitrochoidFrame.src = "https://yannick168.github.io/Bachelorarbeit/src/epitrochoid/epitrochoid.html?v=" + Date.now();
 
-  function sendEpitrochoidUpdate() {
-    const t = parseFloat(document.getElementById('epitrochoidTInput').value);
-    const R = parseFloat(document.getElementById('epitrochoidInputR').value);
-    const r = parseFloat(document.getElementById('epitrochoidInputr').value);
-    const d = parseFloat(document.getElementById('epitrochoidInputd').value);
+    function sendEpitrochoidUpdate() {
+      const theta = parseFloat(document.getElementById('epitrochoidTInput').value);
+      const R = parseFloat(document.getElementById('epitrochoidInputR').value);
+      const r = parseFloat(document.getElementById('epitrochoidInputr').value);
+      const d = parseFloat(document.getElementById('epitrochoidInputd').value);
 
-    if (!isNaN(t) && !isNaN(R) && !isNaN(r) && !isNaN(d)) {
-      epitrochoidFrame.contentWindow?.postMessage({ type: 'updateEpitrochoid', t, R, r, d }, '*');
+      if (!isNaN(theta) && !isNaN(R) && !isNaN(r) && !isNaN(d)) {
+        epitrochoidFrame.contentWindow?.postMessage({ type: 'updateEpitrochoid', theta, R, r, d }, '*');
+      }
     }
-  }
 
-  function syncEpitrochoidSlider(sliderId, inputId) {
-    const slider = document.getElementById(sliderId);
-    const input = document.getElementById(inputId);
+    function syncPair(sliderId, inputId) {
+      const slider = document.getElementById(sliderId);
+      const input  = document.getElementById(inputId);
 
-    slider.addEventListener('input', () => {
-      input.value = slider.value;
-      sendEpitrochoidUpdate();
-    });
+      slider.addEventListener('input', () => {
+        input.value = slider.value;
+        sendEpitrochoidUpdate();
+      });
 
-    input.addEventListener('input', () => {
-      slider.value = input.value;
-      sendEpitrochoidUpdate();
-    });
-  }
+      input.addEventListener('input', () => {
+        slider.value = input.value;
+        sendEpitrochoidUpdate();
+      });
+    }
 
-  syncEpitrochoidSlider('epitrochoidSlider', 'epitrochoidTInput');
-  document.getElementById('epitrochoidInputR').addEventListener('input', sendEpitrochoidUpdate);
-  document.getElementById('epitrochoidInputr').addEventListener('input', sendEpitrochoidUpdate);
-  document.getElementById('epitrochoidInputd').addEventListener('input', sendEpitrochoidUpdate);
+    syncPair('epitrochoidSlider', 'epitrochoidTInput');
+    document.getElementById('epitrochoidInputR').addEventListener('input', sendEpitrochoidUpdate);
+    document.getElementById('epitrochoidInputr').addEventListener('input', sendEpitrochoidUpdate);
+    document.getElementById('epitrochoidInputd').addEventListener('input', sendEpitrochoidUpdate);
+
+    // initial push after short delay (let the iframe boot)
+    setTimeout(sendEpitrochoidUpdate, 300);
+  });
 /*]]>*/
 </script>

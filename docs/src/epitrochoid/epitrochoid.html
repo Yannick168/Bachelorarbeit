@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Epitrochoid</title>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/epitrochoid-DaZkQNA9.js"></script>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/epitrochoid-B8sB9RRn.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/three.module-BZpdcylZ.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-McQ4z10F.js">
@@ -18,8 +18,8 @@
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data?.type === "updateEpitrochoid") {
-        const { t, R, r, d } = data;
-        window.updateEpitrochoid?.(t, R, r, d);
+        const { theta, R, r, d } = data;
+        window.updateEpitrochoid?.(theta, R, r, d);
       }
     });
   </script>

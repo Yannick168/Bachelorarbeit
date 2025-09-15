@@ -22,10 +22,10 @@ let pointMesh: THREE.Mesh;
 let lineToPoint: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
-function epitrochoid(t: number): THREE.Vector3 {
+function epitrochoid(theta: number): THREE.Vector3 {
   const k = R / r;
-  const x = (R + r) * Math.cos(t) - d * Math.cos((1 + k) * t);
-  const y = (R + r) * Math.sin(t) - d * Math.sin((1 + k) * t);
+  const x = (R + r) * Math.cos(theta) - d * Math.cos((1 + k) * theta);
+  const y = (R + r) * Math.sin(theta) - d * Math.sin((1 + k) * theta);
   return new THREE.Vector3(x, y, 0);
 }
 
@@ -82,21 +82,21 @@ function createSceneObjects() {
   updateScene(0);
 }
 
-function updateScene(t: number) {
+function updateScene(theta: number) {
   const k = R / r;
 
-  const center = new THREE.Vector3((R + r) * Math.cos(t), (R + r) * Math.sin(t), -0.01);
+  const center = new THREE.Vector3((R + r) * Math.cos(theta), (R + r) * Math.sin(theta), -0.01);
   circleLine.position.copy(center);
-  circleLine.rotation.z = -(1 + k) * t;
+  circleLine.rotation.z = -(1 + k) * theta;
 
-  const pos = epitrochoid(t);
+  const pos = epitrochoid(theta);
   pointMesh.position.copy(pos);
 
   const linePoints = [center.clone().setZ(0), pos];
   (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
   pathPoints = [];
-  for (let currentT = 0; currentT <= t; currentT += tStep) {
+  for (let currentT = 0; currentT <= theta; currentT += tStep) {
     pathPoints.push(epitrochoid(currentT));
   }
   const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
@@ -114,12 +114,12 @@ function animate() {
 }
 animate();
 
-(window as any).updateEpitrochoid = (t: number, newR?: number, newr?: number, newd?: number) => {
+(window as any).updateEpitrochoid = (theta: number, newR?: number, newr?: number, newd?: number) => {
   if (typeof newR === 'number') R = newR;
   if (typeof newr === 'number') r = newr;
   if (typeof newd === 'number') d = newd;
   createSceneObjects();
-  updateScene(t);
+  updateScene(theta);
 };
 
 // Zoom mit Mausrad
