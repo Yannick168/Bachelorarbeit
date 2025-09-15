@@ -1,24 +1,32 @@
-<!DOCTYPE html>
-<html lang="de">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Catenoid-Helicoid Visualisierung</title>
-  <link rel="stylesheet" href="/style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catenoid–Helicoid</title>
+  <style>
+    html, body { height: 100%; margin: 0; background:#fff; }
+    #canvas { display:block; width:100%; height:100%; }
+  </style>
 </head>
 <body>
+  <!-- WICHTIG: exakt diese ID -->
   <canvas id="canvas"></canvas>
 
-  <!-- WebGL-TypeScript-Modul -->
+  <!-- Dein gebundeltes Script (Vite-Build), NICHT die .ts-Datei direkt -->
   <script type="module" src="./catenoidHelicoid.ts"></script>
 
-  <!-- Externe Steuerung (postMessage vom Slider) -->
+  <!-- Externe Steuerung (Parent -> iFrame) -->
   <script>
     window.addEventListener('message', (event) => {
       const data = event.data;
       if (data?.type === 'alpha') {
         const { alpha } = data;
-        window.updateCatenoidHelicoid?.(alpha);
+        window.updateCatenoidHelicoid?.(alpha); // rückwärtskompatibel
+      }
+      if (data?.type === 'update') {
+        // neues gebündeltes Update: { alpha, c, L, uSegments, vSegments }
+        window.updateCH?.(data);
       }
     });
   </script>

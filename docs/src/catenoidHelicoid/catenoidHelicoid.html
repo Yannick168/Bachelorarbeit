@@ -1,28 +1,35 @@
-<!DOCTYPE html>
-<html lang="de">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Catenoid-Helicoid Visualisierung</title>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/catenoidHelicoid-CUrKBw6t.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catenoid–Helicoid</title>
+  <style>
+    html, body { height: 100%; margin: 0; background:#fff; }
+    #canvas { display:block; width:100%; height:100%; }
+  </style>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/catenoidHelicoid-DvoXbNOJ.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/three.module-BZpdcylZ.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/OrbitControls-2p9hLqhC.js">
-  <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-DpCXGKS2.js">
-  <link rel="stylesheet" crossorigin href="/Bachelorarbeit/assets/style-DugzIA_1.css">
 </head>
 <body>
+  <!-- WICHTIG: exakt diese ID -->
   <canvas id="canvas"></canvas>
 
-  <!-- WebGL-TypeScript-Modul -->
+  <!-- Dein gebundeltes Script (Vite-Build), NICHT die .ts-Datei direkt -->
 
-  <!-- Externe Steuerung (postMessage vom Slider) -->
+  <!-- Externe Steuerung (Parent -> iFrame) -->
   <script>
     window.addEventListener('message', (event) => {
       const data = event.data;
       if (data?.type === 'alpha') {
         const { alpha } = data;
-        window.updateCatenoidHelicoid?.(alpha);
+        window.updateCatenoidHelicoid?.(alpha); // rückwärtskompatibel
+      }
+      if (data?.type === 'update') {
+        // neues gebündeltes Update: { alpha, c, L, uSegments, vSegments }
+        window.updateCH?.(data);
       }
     });
   </script>
