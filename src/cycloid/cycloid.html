@@ -13,14 +13,15 @@
   <script type="module" src="./cycloid.ts"></script>
 
   <!-- Message-Handler für externe Steuerung -->
-  <script>
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (data?.type === 'update') {
-        const { t, theta, distance } = data;
-        window.updateCycloid?.(t, theta, distance);
-      }
-    });
-  </script>
+<script>
+  window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (data?.type === 'update') {
+      const { t, theta, distance, R } = data; // R NEU
+      // Übergib R (kann undefined sein, wenn nicht gesendet)
+      window.updateCycloid?.(t, theta, distance, R);
+    }
+  });
+</script>
 </body>
 </html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zykloide Visualisierung</title>
-  <script type="module" crossorigin src="/Bachelorarbeit/assets/cycloid-DpFD2MEr.js"></script>
+  <script type="module" crossorigin src="/Bachelorarbeit/assets/cycloid-CTXRJ2k7.js"></script>
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/three.module-BZpdcylZ.js">
   <link rel="modulepreload" crossorigin href="/Bachelorarbeit/assets/resizeViewport-McQ4z10F.js">
@@ -16,14 +16,15 @@
   <!-- WebGL-Skript -->
 
   <!-- Message-Handler für externe Steuerung -->
-  <script>
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (data?.type === 'update') {
-        const { t, theta, distance } = data;
-        window.updateCycloid?.(t, theta, distance);
-      }
-    });
-  </script>
+<script>
+  window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (data?.type === 'update') {
+      const { t, theta, distance, R } = data; // R NEU
+      // Übergib R (kann undefined sein, wenn nicht gesendet)
+      window.updateCycloid?.(t, theta, distance, R);
+    }
+  });
+</script>
 </body>
 </html>

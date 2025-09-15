@@ -10,10 +10,10 @@ const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.z = 10;
 
-const r = 1;
+let R = 1;                  // war: const r = 1;
 const maxT = Math.PI * 4;
 const tStep = 0.05;
-let distanceFactor = 1;
+let d = 1;                  // ABSOLUTER Abstand (nicht Faktor)
 let currentTheta = 0;
 
 let pathLine: THREE.Line;
@@ -24,7 +24,8 @@ let groundLine: THREE.Line;
 let pathPoints: THREE.Vector3[] = [];
 
 function circleCenter(t: number): THREE.Vector3 {
-  return new THREE.Vector3(r + r * t, r, -0.01);
+  // Start bei x=R, dann rollt der Mittelpunkt mit x = R + R*t
+  return new THREE.Vector3(R + R * t, R, -0.01);
 }
 
 function createSceneObjects() {
@@ -32,7 +33,7 @@ function createSceneObjects() {
     if (obj) scene.remove(obj);
   });
 
-  const sceneWidth = r * (maxT + 2);
+  const sceneWidth = R * (maxT + 2);
   resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth, 16/9, false);
 
   // Bodenlinie
@@ -48,19 +49,19 @@ function createSceneObjects() {
   pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
   scene.add(pathLine);
 
-  // Kreislinie
+  // Kreis (Radius R)
   const circlePoints: THREE.Vector3[] = [];
   const segments = 64;
   for (let i = 0; i <= segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
-    circlePoints.push(new THREE.Vector3(Math.cos(angle) * r, Math.sin(angle) * r, 0));
+    circlePoints.push(new THREE.Vector3(Math.cos(angle) * R, Math.sin(angle) * R, 0));
   }
   const circleGeom = new THREE.BufferGeometry().setFromPoints(circlePoints);
   circleLine = new THREE.LineLoop(circleGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(circleLine);
 
-  // Roter Punkt
-  const pointGeom = new THREE.CircleGeometry(0.1 * r, 16);
+  // roter Punkt
+  const pointGeom = new THREE.CircleGeometry(0.1 * R, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   scene.add(pointMesh);
@@ -81,29 +82,28 @@ function updateScene(t: number) {
   circleLine.position.copy(center);
   circleLine.rotation.z = -t;
 
-// Punktposition
-const angle = -t + theta + Math.PI / 2; // Punkt startet oben
-const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(r * distanceFactor);
-pointMesh.position.copy(center.clone().add(offset));
+  // Punktposition (Start oben)
+  const angle = -t + theta + Math.PI / 2;
+  const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(d);
+  pointMesh.position.copy(center.clone().add(offset));
 
-// Linie zum Punkt
-const linePoints = [center.clone().setZ(0), pointMesh.position];
-(lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
+  // Linie zum Punkt
+  const linePoints = [center.clone().setZ(0), pointMesh.position];
+  (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePoints);
 
-// Pfad berechnen
-pathPoints = [];
-for (let currentT = 0; currentT <= t; currentT += tStep) {
-  const cx = r + r * currentT;
-  const a = -currentT + theta + Math.PI / 2;  // <- HIER geändert
-  const offset = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(r * distanceFactor);
-  const pos = new THREE.Vector3(cx, r, 0).add(offset);
-  pathPoints.push(pos);
-}
+  // Pfad berechnen
+  pathPoints = [];
+  for (let currentT = 0; currentT <= t; currentT += tStep) {
+    const cx = R + R * currentT;
+    const a = -currentT + theta + Math.PI / 2;
+    const off = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(d);
+    const pos = new THREE.Vector3(cx, R, 0).add(off);
+    pathPoints.push(pos);
+  }
 
-
-  const pathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
+  const newPathGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
   pathLine.geometry.dispose();
-  pathLine.geometry = pathGeom;
+  pathLine.geometry = newPathGeom;
 }
 
 // Resize-Handling
@@ -117,10 +117,13 @@ function animate() {
 }
 animate();
 
-// Globale Methode für postMessage-Anbindung
-(window as any).updateCycloid = (t: number, theta: number, distance: number) => {
-  currentTheta = theta;
-  distanceFactor = distance;
+// Globale Methode für postMessage
+(window as any).updateCycloid = (t: number, thetaDeg: number, distanceAbs: number, newR?: number) => {
+  if (typeof newR === 'number' && isFinite(newR) && newR > 0) {
+    R = newR;
+  }
+  currentTheta = thetaDeg;
+  d = distanceAbs; // absolut
   createSceneObjects();
   updateScene(t);
 };
@@ -128,12 +131,6 @@ animate();
 // Zoom mit Mausrad
 canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
-
-  if (event.deltaY < 0) {
-    camera.zoom *= 1.1; // reinzoomen
-  } else {
-    camera.zoom /= 1.1; // rauszoomen
-  }
-
+  if (event.deltaY < 0) camera.zoom *= 1.1; else camera.zoom /= 1.1;
   camera.updateProjectionMatrix();
 });
