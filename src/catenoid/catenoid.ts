@@ -1,14 +1,15 @@
-// catenoid.ts — Two-mesh setup: colorful outside (FrontSide) + gray inside (BackSide)
-// Control from parent via: postMessage({type:'update', a, vMin, vMax, uSegments, vSegments}, '*');
+// catenoid.ts — two meshes (front colorful, back gray) + point marker at (u0, v0)
+// Control via parent postMessage({type:'update', a, vMin, vMax, uSegments, vSegments, u0Deg, v0})
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-// ---------- Scene / Camera / Renderer ----------
+// ---- Scene / Camera / Renderer ----
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+// alte „schräge“ Ansicht:
 camera.position.set(6, 6, 6);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -17,32 +18,31 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.style.margin = "0";
 document.body.appendChild(renderer.domElement);
 
-// ---------- Lights ----------
+// ---- Lights ----
 scene.add(new THREE.AmbientLight(0xffffff, 0.85));
 const dir = new THREE.DirectionalLight(0xffffff, 0.6);
 dir.position.set(5, 10, 8);
 scene.add(dir);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x888899, 0.25));
 
-// ---------- Helpers (optional) ----------
+// ---- Helpers (optional) ----
 const axes = new THREE.AxesHelper(1.5);
-axes.visible = true; // set false if you don't want axes
+axes.visible = true;
 scene.add(axes);
 
-// ---------- OrbitControls ----------
+// ---- Controls ----
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0, 0);
 
-// ---------- Parameters ----------
+// ---- Params ----
 type CatenoidParams = {
-  a: number;        // waist radius
-  vMin: number;     // lower v bound
-  vMax: number;     // upper v bound
+  a: number;
+  vMin: number;
+  vMax: number;
   uSegments: number;
   vSegments: number;
 };
-
 let params: CatenoidParams = {
   a: 1.0,
   vMin: -2.0,
@@ -51,7 +51,11 @@ let params: CatenoidParams = {
   vSegments: 30,
 };
 
-// ---------- Materials (two meshes: front colorful, back gray) ----------
+// Additional param point
+let u0 = 0;      // radians
+let v0 = 0;      // within [vMin, vMax]
+
+// ---- Materials ----
 const matFront = new THREE.MeshPhongMaterial({
   vertexColors: true,
   side: THREE.FrontSide,
@@ -64,12 +68,18 @@ const matBack = new THREE.MeshPhongMaterial({
   shininess: 10,
 });
 
-// ---------- Mesh references (created after first build) ----------
+// ---- Mesh refs ----
 let meshFront: THREE.Mesh<THREE.BufferGeometry, THREE.Material> | null = null;
 let meshBack:  THREE.Mesh<THREE.BufferGeometry, THREE.Material> | null = null;
 let wireframe: THREE.LineSegments<THREE.WireframeGeometry, THREE.LineBasicMaterial> | null = null;
 
-// ---------- Geometry builder ----------
+// Marker (small sphere)
+const markerGeom = new THREE.SphereGeometry(0.06, 24, 16);
+const markerMat  = new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.3, metalness: 0.0 });
+const marker     = new THREE.Mesh(markerGeom, markerMat);
+scene.add(marker);
+
+// ---- Geometry builder ----
 function makeGeometry(p: CatenoidParams): THREE.BufferGeometry {
   const { a, vMin, vMax, uSegments, vSegments } = p;
 
@@ -78,20 +88,19 @@ function makeGeometry(p: CatenoidParams): THREE.BufferGeometry {
   const indices: number[] = [];
 
   for (let j = 0; j <= vSegments; j++) {
-    const t = j / vSegments;                   // 0..1 along v
+    const t = j / vSegments;
     const v = vMin + (vMax - vMin) * t;
-    const R = a * Math.cosh(v / a);            // r(z) = a cosh(z/a)
+    const R = a * Math.cosh(v / a);
 
     for (let i = 0; i <= uSegments; i++) {
-      const u = 2 * Math.PI * (i / uSegments); // 0..2π
+      const u = 2 * Math.PI * (i / uSegments);
       const x = R * Math.cos(u);
       const y = R * Math.sin(u);
       const z = v;
-
       positions.push(x, y, z);
 
-      // Colors like before: simple gradient along v
-      const s = t;            // 0..1
+      // Farben wie früher: einfacher Gradient entlang v
+      const s = t;
       const r = s;
       const g = 1.0 - s;
       const b = 0.15;
@@ -111,14 +120,13 @@ function makeGeometry(p: CatenoidParams): THREE.BufferGeometry {
 
   const geom = new THREE.BufferGeometry();
   geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geom.setAttribute("color",    new THREE.Float32BufferAttribute(colors,    3));
+  geom.setAttribute("color",    new THREE.Float32BufferAttribute(colors, 3));
   geom.setIndex(indices);
   geom.computeVertexNormals();
-  geom.center(); // center waist at origin
+  geom.center();
   return geom;
 }
 
-// ---------- First build: then create meshes ----------
 function initialBuild() {
   const geom = makeGeometry(params);
 
@@ -132,29 +140,43 @@ function initialBuild() {
   );
   wireframe.renderOrder = 1;
   scene.add(wireframe);
+
+  updateMarker(); // place marker at current (u0, v0)
 }
 initialBuild();
 
-// ---------- Rebuild on param updates ----------
 function rebuild() {
   if (!meshFront || !meshBack || !wireframe) return;
 
+  // clamp v0 to new bounds
+  v0 = THREE.MathUtils.clamp(v0, params.vMin, params.vMax);
+
   const newGeom = makeGeometry(params);
 
-  // dispose old geometries
   meshFront.geometry.dispose();
   meshBack.geometry.dispose();
   wireframe.geometry.dispose();
 
-  // assign new ones
   meshFront.geometry = newGeom;
   meshBack.geometry  = newGeom;
   wireframe.geometry = new THREE.WireframeGeometry(newGeom);
 
+  updateMarker();
   controls.target.set(0, 0, 0);
 }
 
-// ---------- postMessage listener ----------
+// compute param point
+function paramPoint(a: number, u: number, v: number): THREE.Vector3 {
+  const R = a * Math.cosh(v / a);
+  return new THREE.Vector3(R * Math.cos(u), R * Math.sin(u), v);
+}
+
+function updateMarker() {
+  const p = paramPoint(params.a, u0, THREE.MathUtils.clamp(v0, params.vMin, params.vMax));
+  marker.position.copy(p);
+}
+
+// ---- postMessage listener ----
 window.addEventListener("message", (ev: MessageEvent) => {
   const msg = ev.data;
   if (!msg || typeof msg !== "object") return;
@@ -164,12 +186,16 @@ window.addEventListener("message", (ev: MessageEvent) => {
     if (typeof msg.vMax === "number")      params.vMax = msg.vMax;
     if (typeof msg.uSegments === "number") params.uSegments = Math.max(4, Math.floor(msg.uSegments));
     if (typeof msg.vSegments === "number") params.vSegments = Math.max(4, Math.floor(msg.vSegments));
+    if (typeof msg.u0Deg === "number")     u0 = THREE.MathUtils.degToRad(((msg.u0Deg % 360) + 360) % 360);
+    if (typeof msg.v0 === "number")        v0 = msg.v0;
+
     if (params.vMin > params.vMax) [params.vMin, params.vMax] = [params.vMax, params.vMin];
+
     rebuild();
   }
 }, false);
 
-// ---------- Resize ----------
+// ---- Resize ----
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -177,7 +203,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ---------- Render loop ----------
+// ---- Loop ----
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -185,10 +211,10 @@ function animate() {
 }
 animate();
 
-// Optional: Reset camera with "r"
+// Optional: reset camera with "r"
 window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "r") {
-    camera.position.set(5, 4, 6);
+    camera.position.set(6, 6, 6);
     controls.target.set(0, 0, 0);
   }
 });
