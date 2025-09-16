@@ -22,9 +22,6 @@
                 Cycloid (special case \(d=R\), \(\varphi=0\))
             </p>
             $$ x(\theta)=R\!\left(\theta - \sin(\theta)\right),\qquad y(\theta)=R\!\left(1 - \cos(\theta)\right). $$
-            <p class="mb-0">
-                \( \theta \) = roll/position (radians), \( \varphi \) = phase offset on the rolling circle (degrees here). \(d&lt;R\): curtate, \(d=R\): cycloid, \(d&gt;R\): prolate.
-            </p>
         </div>
     </div>
 
@@ -47,10 +44,9 @@
                         </div>
                     </div>
                 </div>
-                <!-- d (0 … 2R, passt sich an R an) -->
 
                 <div class="mb-3">
-                    <label for="cyc-d" class="form-label">Distance \(d\) (auto: \(0\) … \(2R\))</label>
+                    <label for="cyc-d" class="form-label">Distance \(d\)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="cyc-d" class="form-range" min="0" max="2.00" step="0.01" value="1.00" />
@@ -92,11 +88,18 @@
             </div>
         </div>
         <!-- iFrame (rechts) -->
+        <!-- iFrame (rechts) -->
 
-        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
-            <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
+        <div class="col-12 col-md-8 d-flex flex-column align-items-center">
+            <div class="ratio ratio-16x9 mb-2" style="max-width: 900px; width: 100%;">
                 <iframe id="cyc-frame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="cyc-frame"></iframe>
             </div>
+
+            <ul class="mb-0">
+                <li>
+                    <strong>Mouse wheel</strong>: zoom
+                </li>
+            </ul>
         </div>
     </div>
 </div>

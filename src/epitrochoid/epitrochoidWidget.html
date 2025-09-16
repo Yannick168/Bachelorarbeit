@@ -61,7 +61,7 @@
                 <!-- d (0 … 2r, updates with r) -->
 
                 <div class="mb-3">
-                    <label for="epitrochoidDRange" class="form-label">Offset \( d \) (auto: \(0\) … \(2r\))</label>
+                    <label for="epitrochoidDRange" class="form-label">Offset \( d \)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidDRange" class="form-range" min="0.00" max="2.00" step="0.01" value="1.00" />
@@ -90,10 +90,15 @@
         </div>
         <!-- iFrame (right) -->
 
-        <div class="col-12 col-md-8 d-flex justify-content-center align-items-center">
+        <div class="col-12 col-md-8 d-flex flex-column align-items-center">
             <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
                 <iframe id="epitrochoidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="epitrochoidFrame"></iframe>
             </div>
+            <ul class="mb-0">
+                <li>
+                    <strong>Mouse wheel</strong>: zoom
+                </li>
+            </ul>
         </div>
     </div>
 </div>
