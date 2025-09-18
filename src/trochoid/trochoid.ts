@@ -17,6 +17,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-10, 10, 5, -5, 0.1, 100);
 camera.position.set(0, 0, 10);
 
+// --- Parameter ---
 let R = 1;                  // rolling radius (can be changed by parent)
 const maxTheta = Math.PI * 4;
 const thetaStep = 0.05;
@@ -24,28 +25,45 @@ const thetaStep = 0.05;
 let d = 1;                  // absolute offset from center
 let currentPhiDeg = 0;      // point offset on wheel (degrees)
 
+// --- Scene Objekte ---
 let pathLine: THREE.Line | undefined;
 let circleLine: THREE.Line | undefined;
 let pointMesh: THREE.Mesh | undefined;
 let lineToPoint: THREE.Line | undefined;
 let groundLine: THREE.Line | undefined;
 
+// --- Viewport-Handling ---
+// Wichtig: NICHT an R koppeln, damit der Kreis sichtbar größer/kleiner wird.
+let didInitialFit = false;
+function fitViewport() {
+  const sceneWidth = (maxTheta + 2);     // R-unabhängig!
+  resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth, 16 / 9, false);
+  camera.updateProjectionMatrix();
+}
+
+function fitViewportOnce() {
+  if (!didInitialFit) {
+    fitViewport();
+    didInitialFit = true;
+  }
+}
+
+// --- Geometrie / Szene aufbauen ---
 function circleCenter(theta: number): THREE.Vector3 {
   // Rolling on x-axis: center starts at (R, R) and moves by R * theta in x
   return new THREE.Vector3(R + R * theta, R, -0.01);
 }
 
 function createSceneObjects() {
-  // Remove old objects
+  // Alte Objekte entfernen
   [pathLine, circleLine, pointMesh, lineToPoint, groundLine].forEach(obj => {
     if (obj) scene.remove(obj);
   });
 
-  // Fit viewport to current R
-  const sceneWidth = R * (maxTheta + 2);
-  resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth, 16 / 9, false);
+  // Viewport NICHT an R koppeln
+  fitViewportOnce();
 
-  // Ground line (y=0) across current view
+  // Bodenlinie (y=0) über die aktuelle Kamerabbreite
   const groundGeom = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(camera.left, 0, 0),
     new THREE.Vector3(camera.right, 0, 0),
@@ -53,12 +71,12 @@ function createSceneObjects() {
   groundLine = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(groundLine);
 
-  // Empty path line (we'll fill in updateScene)
+  // Pfad (wird in updateScene befüllt)
   const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
   pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
   scene.add(pathLine);
 
-  // Rolling circle of radius R at origin (will be positioned in updateScene)
+  // Rollender Kreis (Radius R), wird in updateScene positioniert/rotiert
   const circlePts: THREE.Vector3[] = [];
   const segs = 64;
   for (let i = 0; i <= segs; i++) {
@@ -69,13 +87,13 @@ function createSceneObjects() {
   circleLine = new THREE.LineLoop(circleGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(circleLine);
 
-  // Red point on the rolling circle
+  // Roter Punkt auf dem Kreis (Skalierung ~ R)
   const pointGeom = new THREE.CircleGeometry(0.1 * R, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   scene.add(pointMesh);
 
-  // Line from center to point
+  // Linie vom Zentrum zum Punkt
   const lpGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
   lineToPoint = new THREE.Line(lpGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
   scene.add(lineToPoint);
@@ -88,21 +106,21 @@ function updateScene(thetaRoll: number) {
 
   const phiRad = (currentPhiDeg * Math.PI) / 180;
 
-  // Rolling circle transform
+  // Kreis-Transform
   const center = circleCenter(thetaRoll);
   circleLine.position.copy(center);
   circleLine.rotation.z = -thetaRoll;
 
-  // Point on circle (start at top when phi=0)
+  // Punkt auf dem Kreis (Start oben bei phi=0)
   const angle = -thetaRoll + phiRad + Math.PI / 2;
   const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(d);
   pointMesh.position.copy(center.clone().add(offset));
 
-  // Line from center to point (z=0 for a crisp line)
+  // Linie vom Zentrum zum Punkt (z=0 für scharfe Linie)
   const linePts = [center.clone().setZ(0), pointMesh.position];
   (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePts);
 
-  // Trace path from 0 to thetaRoll
+  // Pfad von 0 bis thetaRoll
   const pathPts: THREE.Vector3[] = [];
   const start = Math.min(0, thetaRoll);
   const end = Math.max(0, thetaRoll);
@@ -117,10 +135,15 @@ function updateScene(thetaRoll: number) {
   pathLine.geometry = newPathGeom;
 }
 
-// Resize handling
-window.addEventListener('resize', () => createSceneObjects());
+// Resize-Handling
+window.addEventListener('resize', () => {
+  didInitialFit = false;  // beim nächsten createSceneObjects() wieder fitten
+  fitViewportOnce();
+  createSceneObjects();
+});
 
 // Start
+fitViewportOnce();
 createSceneObjects();
 function animate() {
   requestAnimationFrame(animate);
@@ -128,7 +151,7 @@ function animate() {
 }
 animate();
 
-// Public API for parent -> iframe postMessage
+// Public API für parent -> iframe postMessage
 // Matches: { theta, phi, d, R }
 (window as any).updateTrochoid = (
   theta: number,   // roll/position, radians
@@ -142,14 +165,24 @@ animate();
   currentPhiDeg = phiDeg;
   d = dAbs;
 
-  // Recreate geometry with new R (viewport etc.)
+  // Geometrie mit neuem R rekonstruieren (Kamera bleibt R-unabhängig)
   createSceneObjects();
   updateScene(theta);
 };
 
-// Simple zoom with mouse wheel
+// Einfaches Zoom mit Maus
 canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
   if (event.deltaY < 0) camera.zoom *= 1.1; else camera.zoom /= 1.1;
   camera.updateProjectionMatrix();
+
+  // Bodenlinie an neue Kamerabbreite anpassen
+  if (groundLine) {
+    const g = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(camera.left, 0, 0),
+      new THREE.Vector3(camera.right, 0, 0),
+    ]);
+    groundLine.geometry.dispose();
+    groundLine.geometry = g;
+  }
 });

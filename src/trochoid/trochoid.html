@@ -13,14 +13,13 @@
   <script type="module" src="./trochoid.ts"></script>
 
   <!-- Message-Handler für externe Steuerung -->
-<script>
-  window.addEventListener('message', (e) => {
-    const { type, theta, phi, d, R } = e.data || {};
-    if (type === 'update') {
-      window.updateTrochoid?.(theta, phi, d, R);
-    }
-  });
-</script>
-
+  <script>
+    window.addEventListener('message', (e) => {
+      const { type, theta, phi, d, R } = e.data || {};
+      if (type === 'update') {
+        window.updateTrochoid?.(theta, phi, d, R);
+      }
+    });
+  </script>
 </body>
 </html>

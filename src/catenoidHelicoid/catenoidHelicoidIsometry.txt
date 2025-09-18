@@ -1,0 +1,228 @@
+<style>
+<![CDATA[
+
+  /* verhindert 0px-Höhe, falls das Ratio mal kollabiert */
+  #iso-ratio.ratio-16x9 { min-height: 360px; }
+  #iso-ratio iframe { display:block; width:100%; height:100%; }
+]]>
+</style><!-- (Nur EINMAL pro Seite laden; weglassen, wenn schon vorhanden) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" />
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script> 
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload=
+"renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
+<div class="container my-4" id="iso-widget">
+    <div class="row g-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Catenoid–Helicoid Isometry
+            </h3>
+        </div>
+        <!-- Formeln -->
+
+        <div class="col-12">
+            <div class="mb-3">
+                <p class="mb-2 fw-semibold">
+                    Isometry
+                </p>
+                $$ X_\alpha(u,v)= \begin{pmatrix} c\!\left(\cos (u)\,\cosh (\!\frac{v}{c})\,\cos (\alpha) + \sin (u)\,\sinh (\!\frac{v}{c})\,\sin (\alpha )\right) \\ c\!\left(\sin
+                (u)\,\cosh(\!\frac{v}{c})\,\cos\alpha - \cos (u) \,\sinh(\!\frac{v}{c})\,\sin(\alpha)\right) \\ v\,\cos(\alpha) + c\,u\,\sin(\alpha) \end{pmatrix},\quad u\in[0,2\pi),\;
+                v\in\mathbb{R}. $$
+                <p class="mb-2 fw-semibold">
+                    Special cases
+                </p>
+                $$ X_{0}(u,v)=\bigl(c\,\cosh(\tfrac{v}{c})\cos (u),\;c\,\cosh(\tfrac{v}{c})\sin (u),\;v\bigr)\quad(\text{Catenoid}). $$ $$ X_{\pi/2}(u,v)=\bigl(c\,\sinh(\tfrac{v}{c})\sin (
+                u),\;-c\,\sinh(\tfrac{v}{c})\cos (u),\;c\,u\bigr)\quad(\text{Helicoid}). $$
+            </div>
+        </div>
+        <!-- Links: Slider -->
+
+        <div class="col-12 col-md-4">
+            <div class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                    <label for="iso-alphaRange" class="form-label">\( \alpha \) (Catenoid ↔ Helicoid)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="iso-alphaRange" class="form-range" min="0" max="1.5708" step="0.01" value="0.00" />
+                        </div>
+
+                        <div class="col-auto" style="width:6rem;">
+                            <input type="number" id="iso-alphaNum" class="form-control" min="0" max="1.5708" step="0.01" value="0.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="iso-cRange" class="form-label">Waist radius \( c \)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="iso-cRange" class="form-range" min="0.2" max="3" step="0.01" value="1.00" />
+                        </div>
+
+                        <div class="col-auto" style="width:6rem;">
+                            <input type="number" id="iso-cNum" class="form-control" min="0.2" max="3" step="0.01" value="1.00" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="iso-LRange" class="form-label">Half length \( L \) (mit \( v\in[-L,L] \))</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="iso-LRange" class="form-range" min="0.5" max="6" step="0.1" value="2.0" />
+                        </div>
+
+                        <div class="col-auto" style="width:6rem;">
+                            <input type="number" id="iso-LNum" class="form-control" min="0.5" max="6" step="0.1" value="2.0" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="iso-uSegRange" class="form-label">\( u \)-Segmente</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="iso-uSegRange" class="form-range" min="8" max="128" step="1" value="30" />
+                        </div>
+
+                        <div class="col-auto" style="width:6rem;">
+                            <input type="number" id="iso-uSegNum" class="form-control" min="8" max="128" step="1" value="30" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label for="iso-vSegRange" class="form-label">\( v \)-Segmente</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="iso-vSegRange" class="form-range" min="8" max="128" step="1" value="30" />
+                        </div>
+
+                        <div class="col-auto" style="width:6rem;">
+                            <input type="number" id="iso-vSegNum" class="form-control" min="8" max="128" step="1" value="30" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Rechts: iFrame + Controls -->
+
+        <div class="col-12 col-md-8">
+            <div class="d-flex justify-content-center align-items-center mb-3">
+                <div id="iso-ratio" class="ratio ratio-16x9" style="width:100%; max-width:900px;">
+                    <iframe id="iso-frame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="iso-frame"></iframe>
+                </div>
+            </div>
+
+            <div>
+                <ul class="mb-0">
+                    <li>
+                        <strong>Left mouse button</strong>: rotate
+                    </li>
+
+                    <li>
+                        <strong>Right mouse button</strong>: pan
+                    </li>
+
+                    <li>
+                        <strong>Mouse wheel</strong>: zoom
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+(() => {
+  // WICHTIG: eigener Scope, damit keine Namenskollision mit anderen Widgets entsteht
+  const iframe = document.getElementById('iso-frame');
+
+  // Erst Events setzen, DANN src setzen (sonst verpasst man 'load')
+  const url = "https://yannick168.github.io/Bachelorarbeit/src/catenoidHelicoid/catenoidHelicoid.html?v=" + Date.now();
+
+  const els = {
+    alpha:    document.getElementById('iso-alphaRange'),
+    alphaNum: document.getElementById('iso-alphaNum'),
+    c:        document.getElementById('iso-cRange'),
+    cNum:     document.getElementById('iso-cNum'),
+    L:        document.getElementById('iso-LRange'),
+    LNum:     document.getElementById('iso-LNum'),
+    us:       document.getElementById('iso-uSegRange'),
+    usNum:    document.getElementById('iso-uSegNum'),
+    vs:       document.getElementById('iso-vSegRange'),
+    vsNum:    document.getElementById('iso-vSegNum'),
+  };
+
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const midpoint = (min, max) => (parseFloat(min) + parseFloat(max)) / 2;
+  const decimalsFromStep = (s) => (String(s).includes(".") ? String(s).split(".")[1].length : 0);
+  const roundToStep = (value, min, step) => min + Math.round((value - min) / step) * step;
+  const debounce = (fn, ms=80) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
+
+  const postUpdate = debounce(() => {
+    const alpha = parseFloat(els.alphaNum.value);
+    const c     = parseFloat(els.cNum.value);
+    const L     = parseFloat(els.LNum.value);
+    const us    = parseInt(els.usNum.value, 10);
+    const vs    = parseInt(els.vsNum.value, 10);
+    if (![alpha,c,L,us,vs].every(Number.isFinite)) return;
+
+    iframe.contentWindow?.postMessage({ type: 'update', alpha, c, L, uSegments: us, vSegments: vs }, '*');
+    iframe.contentWindow?.postMessage({ type: 'alpha', alpha }, '*'); // rückwärtskompatibel
+  }, 60);
+
+  function bindPair(rangeEl, numEl, { integers=false } = {}) {
+    const min = parseFloat(rangeEl.min);
+    const max = parseFloat(rangeEl.max);
+    const step = parseFloat(rangeEl.step || (integers ? "1" : "0.01"));
+    const decs = integers ? 0 : decimalsFromStep(step);
+
+    rangeEl.addEventListener('input', () => {
+      numEl.value = integers ? String(parseInt(rangeEl.value, 10)) : Number(rangeEl.value).toFixed(decs);
+      postUpdate();
+    });
+
+    const applyNumber = () => {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) return;
+      v = clamp(v, min, max);
+      v = integers ? Math.round(v) : roundToStep(v, min, step);
+      numEl.value = integers ? String(v) : v.toFixed(decs);
+
+      rangeEl.value = midpoint(rangeEl.min, rangeEl.max);
+      postUpdate();
+    };
+    numEl.addEventListener('input',  applyNumber);
+    numEl.addEventListener('change', applyNumber);
+    numEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') applyNumber(); });
+  }
+
+  bindPair(els.alpha, els.alphaNum, { integers:false });
+  bindPair(els.c,     els.cNum,     { integers:false });
+  bindPair(els.L,     els.LNum,     { integers:false });
+  bindPair(els.us,    els.usNum,    { integers:true  });
+  bindPair(els.vs,    els.vsNum,    { integers:true  });
+
+  // Ready-Handshake + Fallbacks
+  let iframeReady = false;
+
+  window.addEventListener('message', (e) => {
+    if (e.source === iframe.contentWindow && e.data?.type === 'ready') {
+      iframeReady = true;
+      postUpdate();
+    }
+  });
+
+  iframe.addEventListener('load', () => {
+    setTimeout(() => { if (!iframeReady) postUpdate(); }, 250);
+  });
+
+  // SRC setzen, nachdem alle Listener hängen
+  requestAnimationFrame(() => { iframe.src = url; });
+
+  // Ultimativer Fallback
+  setTimeout(() => { if (!iframeReady) postUpdate(); }, 1500);
+})();
+/*]]>*/
+</script>
