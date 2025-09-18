@@ -40,7 +40,6 @@ function fitViewport() {
   resizeToMaxViewportOrthographic(renderer, camera, canvas, sceneWidth, 16 / 9, false);
   camera.updateProjectionMatrix();
 }
-
 function fitViewportOnce() {
   if (!didInitialFit) {
     fitViewport();
@@ -48,12 +47,31 @@ function fitViewportOnce() {
   }
 }
 
-// --- Geometrie / Szene aufbauen ---
+// --- Hilfsfunktionen ---
 function circleCenter(theta: number): THREE.Vector3 {
   // Rolling on x-axis: center starts at (R, R) and moves by R * theta in x
   return new THREE.Vector3(R + R * theta, R, -0.01);
 }
 
+/** Gewünschte Bodenlänge in x-Richtung in Abhängigkeit von R und maxTheta. */
+function groundExtentX(): { xmin: number; xmax: number } {
+  const margin = Math.max(0.5, 0.1 * R); // kleine Reserve
+  const xmin = 0 - margin;               // Start leicht links von 0
+  const xmax = R * (2 + maxTheta) + margin; // bis zum rechten Rand inkl. Kreisradius
+  return { xmin, xmax };
+}
+
+function createGroundLine() {
+  const { xmin, xmax } = groundExtentX();
+  const groundGeom = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(xmin, 0, 0),
+    new THREE.Vector3(xmax, 0, 0),
+  ]);
+  const mat = new THREE.LineBasicMaterial({ color: 0x000000 });
+  return new THREE.Line(groundGeom, mat);
+}
+
+// --- Geometrie / Szene aufbauen ---
 function createSceneObjects() {
   // Alte Objekte entfernen
   [pathLine, circleLine, pointMesh, lineToPoint, groundLine].forEach(obj => {
@@ -63,12 +81,8 @@ function createSceneObjects() {
   // Viewport NICHT an R koppeln
   fitViewportOnce();
 
-  // Bodenlinie (y=0) über die aktuelle Kamerabbreite
-  const groundGeom = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(camera.left, 0, 0),
-    new THREE.Vector3(camera.right, 0, 0),
-  ]);
-  groundLine = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
+  // Bodenlinie (y=0) mit Länge abhängig von R und maxTheta
+  groundLine = createGroundLine();
   scene.add(groundLine);
 
   // Pfad (wird in updateScene befüllt)
@@ -165,6 +179,17 @@ animate();
   currentPhiDeg = phiDeg;
   d = dAbs;
 
+  // Boden an neues R anpassen
+  if (groundLine) {
+    const { xmin, xmax } = groundExtentX();
+    const g = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(xmin, 0, 0),
+      new THREE.Vector3(xmax, 0, 0),
+    ]);
+    groundLine.geometry.dispose();
+    groundLine.geometry = g;
+  }
+
   // Geometrie mit neuem R rekonstruieren (Kamera bleibt R-unabhängig)
   createSceneObjects();
   updateScene(theta);
@@ -175,14 +200,4 @@ canvas.addEventListener('wheel', (event) => {
   event.preventDefault();
   if (event.deltaY < 0) camera.zoom *= 1.1; else camera.zoom /= 1.1;
   camera.updateProjectionMatrix();
-
-  // Bodenlinie an neue Kamerabbreite anpassen
-  if (groundLine) {
-    const g = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(camera.left, 0, 0),
-      new THREE.Vector3(camera.right, 0, 0),
-    ]);
-    groundLine.geometry.dispose();
-    groundLine.geometry = g;
-  }
 });
