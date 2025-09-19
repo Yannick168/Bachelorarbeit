@@ -33,7 +33,7 @@
                 <!-- R -->
 
                 <div class="mb-3">
-                    <label for="cyc-R" class="form-label">Rolling radius \(R\)</label>
+                    <label for="cyc-R" class="form-label">\( R \): Radius of the rolling circle</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="cyc-R" class="form-range" min="0.2" max="3" step="0.01" value="1.00" />
@@ -46,7 +46,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="cyc-d" class="form-label">Distance \(d\)</label>
+                    <label for="cyc-d" class="form-label">\( d \): Distance from rolling circle center to drawing point</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="cyc-d" class="form-range" min="0" max="2.00" step="0.01" value="1.00" />
@@ -60,7 +60,7 @@
                 <!-- φ (Offset am Rad, in Grad) -->
 
                 <div class="mb-3">
-                    <label for="cyc-phi" class="form-label">Point angle \( \varphi \) (degrees)</label>
+                    <label for="cyc-phi" class="form-label">\( \varphi \): Point angle (degrees)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="cyc-phi" class="form-range" min="0" max="360" step="1" value="0" />
@@ -74,7 +74,7 @@
                 <!-- θ (Roll-/Positionsparameter in Rad) -->
 
                 <div class="mb-0">
-                    <label for="cyc-theta-roll" class="form-label">Position \( \theta \in [0,\,4\pi] \)</label>
+                    <label for="cyc-theta-roll" class="form-label">\( \theta \in [0,\,6\pi] \): Position parameter (radians)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="cyc-theta-roll" class="form-range" min="0" max="12.56" step="0.01" value="0" />

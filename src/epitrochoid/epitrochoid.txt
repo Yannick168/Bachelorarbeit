@@ -33,7 +33,7 @@
                 <!-- R -->
 
                 <div class="mb-3">
-                    <label for="epitrochoidRRange" class="form-label">Large radius \( R \)</label>
+                    <label for="epitrochoidRRange" class="form-label">\( R \): Radius of the fixed circle</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidRRange" class="form-range" min="0.10" max="5.00" step="0.01" value="1.00" />
@@ -47,7 +47,7 @@
                 <!-- r -->
 
                 <div class="mb-3">
-                    <label for="epitrochoidrRange" class="form-label">Small radius \( r \)</label>
+                    <label for="epitrochoidrRange" class="form-label">\( r \): Radius of the rolling circle</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidrRange" class="form-range" min="0.10" max="3.00" step="0.01" value="1.00" />
@@ -61,7 +61,7 @@
                 <!-- d (0 … 2r, updates with r) -->
 
                 <div class="mb-3">
-                    <label for="epitrochoidDRange" class="form-label">Offset \( d \)</label>
+                    <label for="epitrochoidDRange" class="form-label">\( d \): Distance from rolling circle center to drawing point</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidDRange" class="form-range" min="0.00" max="2.00" step="0.01" value="1.00" />
@@ -75,7 +75,7 @@
                 <!-- theta -->
 
                 <div class="mb-0">
-                    <label for="epitrochoidSlider" class="form-label">Position \( \theta \in [0,\,6\pi] \)</label>
+                    <label for="epitrochoidSlider" class="form-label">\( \theta \in [0,\,6\pi] \): Position parameter (radians)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="epitrochoidSlider" class="form-range" min="0" max="18.85" step="0.01" value="0" />

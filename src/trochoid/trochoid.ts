@@ -126,7 +126,7 @@ function updateScene(thetaRoll: number) {
   circleLine.rotation.z = -thetaRoll;
 
   // Punkt auf dem Kreis (Start oben bei phi=0)
-  const angle = -thetaRoll + phiRad + Math.PI / 2;
+  const angle = -thetaRoll + phiRad - Math.PI / 2;
   const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(d);
   pointMesh.position.copy(center.clone().add(offset));
 
@@ -140,7 +140,7 @@ function updateScene(thetaRoll: number) {
   const end = Math.max(0, thetaRoll);
   for (let th = start; th <= end + 1e-9; th += thetaStep) {
     const cx = R + R * th;
-    const a = -th + phiRad + Math.PI / 2;
+    const a = -th + phiRad - Math.PI / 2;
     const off = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(d);
     pathPts.push(new THREE.Vector3(cx, R, 0).add(off));
   }

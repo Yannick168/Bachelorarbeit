@@ -35,7 +35,7 @@
                 <!-- R -->
 
                 <div class="mb-3">
-                    <label for="hypoRRange" class="form-label">Outer radius \( R \)</label>
+                    <label for="hypoRRange" class="form-label">\( R \): Radius of the fixed circle</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="hypoRRange" class="form-range" min="0.10" max="8.00" step="0.01" value="4.00" />
@@ -49,7 +49,7 @@
                 <!-- r -->
 
                 <div class="mb-3">
-                    <label for="hyporrRange" class="form-label">Inner radius \( r \)</label>
+                    <label for="hyporrRange" class="form-label">\( r \): Radius of the rolling circle</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="hyporrRange" class="form-range" min="0.10" max="4.00" step="0.01" value="1.00" />
@@ -63,7 +63,7 @@
                 <!-- d (0 … 2r, updates with r) -->
 
                 <div class="mb-3">
-                    <label for="hypoDRange" class="form-label">Offset \( d \)</label>
+                    <label for="hypoDRange" class="form-label">\( d \): Distance from rolling circle center to drawing point</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="hypoDRange" class="form-range" min="0.00" max="2.00" step="0.01" value="1.00" />
@@ -77,7 +77,7 @@
                 <!-- theta -->
 
                 <div class="mb-0">
-                    <label for="hypoThetaRange" class="form-label">Position \( \theta \in [0,\,6\pi] \)</label>
+                    <label for="hypoThetaRange" class="form-label">\( \theta \in [0,\,6\pi] \): Position parameter (radians)</label>
                     <div class="row gx-2 align-items-center">
                         <div class="col">
                             <input type="range" id="hypoThetaRange" class="form-range" min="0" max="18.85" step="0.01" value="0" />
