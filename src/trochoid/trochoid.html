@@ -15,9 +15,9 @@
   <!-- Message-Handler für externe Steuerung -->
   <script>
     window.addEventListener('message', (e) => {
-      const { type, theta, phi, d, R } = e.data || {};
+      const { type, theta, d, R } = e.data || {};
       if (type === 'update') {
-        window.updateTrochoid?.(theta, phi, d, R);
+        window.updateTrochoid?.(theta, d, R);
       }
     });
   </script>

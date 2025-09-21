@@ -1,7 +1,6 @@
-// Erwartetes Parent-Message-Format:
-// frame.contentWindow?.postMessage({ type:'update', theta, phi, d, R }, '*');
+// Erwartetes Parent-Message-Format (ohne phi):
+// frame.contentWindow?.postMessage({ type:'update', theta, d, R }, '*');
 //  - theta: roll/position (radians)
-//  - phi:   point offset on wheel (degrees)
 //  - d:     absolute distance from center
 //  - R:     rolling circle radius
 
@@ -23,17 +22,16 @@ const maxTheta = Math.PI * 4;
 const thetaStep = 0.05;
 
 let d = 1;                  // absolute offset from center
-let currentPhiDeg = 0;      // point offset on wheel (degrees)
 
 // --- Scene Objekte ---
-let pathLine: THREE.Line | undefined;
-let circleLine: THREE.Line | undefined;
-let pointMesh: THREE.Mesh | undefined;
-let lineToPoint: THREE.Line | undefined;
-let groundLine: THREE.Line | undefined;
+let pathLine: THREE.Line | undefined;        // durchgezogene Bahn
+let tracePoints: THREE.Points | undefined;   // Spurpunkte als Punktewolke
+let circleLine: THREE.Line | undefined;      // rollender Kreis
+let pointMesh: THREE.Mesh | undefined;       // roter Spurpunkt
+let dLine: THREE.Line | undefined;           // Gerade d (Radius-Segment)
+let groundLine: THREE.Line | undefined;      // Boden y=0
 
 // --- Viewport-Handling ---
-// Wichtig: NICHT an R koppeln, damit der Kreis sichtbar größer/kleiner wird.
 let didInitialFit = false;
 function fitViewport() {
   const sceneWidth = (maxTheta + 2);     // R-unabhängig!
@@ -53,11 +51,10 @@ function circleCenter(theta: number): THREE.Vector3 {
   return new THREE.Vector3(R + R * theta, R, -0.01);
 }
 
-/** Gewünschte Bodenlänge in x-Richtung in Abhängigkeit von R und maxTheta. */
 function groundExtentX(): { xmin: number; xmax: number } {
-  const margin = Math.max(0.5, 0.1 * R); // kleine Reserve
-  const xmin = 0 - margin;               // Start leicht links von 0
-  const xmax = R * (2 + maxTheta) + margin; // bis zum rechten Rand inkl. Kreisradius
+  const margin = Math.max(0.5, 0.1 * R);
+  const xmin = 0 - margin;
+  const xmax = R * (2 + maxTheta) + margin;
   return { xmin, xmax };
 }
 
@@ -67,30 +64,46 @@ function createGroundLine() {
     new THREE.Vector3(xmin, 0, 0),
     new THREE.Vector3(xmax, 0, 0),
   ]);
-  const mat = new THREE.LineBasicMaterial({ color: 0x000000 });
+  const mat = new THREE.LineBasicMaterial({ color: 0x000000, depthTest: false });
   return new THREE.Line(groundGeom, mat);
 }
 
 // --- Geometrie / Szene aufbauen ---
 function createSceneObjects() {
   // Alte Objekte entfernen
-  [pathLine, circleLine, pointMesh, lineToPoint, groundLine].forEach(obj => {
+  [pathLine, tracePoints, circleLine, pointMesh, dLine, groundLine].forEach(obj => {
     if (obj) scene.remove(obj);
   });
 
   // Viewport NICHT an R koppeln
   fitViewportOnce();
 
-  // Bodenlinie (y=0) mit Länge abhängig von R und maxTheta
+  // Bodenlinie (y=0)
   groundLine = createGroundLine();
   scene.add(groundLine);
 
-  // Pfad (wird in updateScene befüllt)
+  // Pfad (Linie)
   const pathGeom = new THREE.BufferGeometry().setFromPoints([]);
-  pathLine = new THREE.Line(pathGeom, new THREE.LineBasicMaterial({ color: 0x0000ff }));
+  pathLine = new THREE.Line(
+    pathGeom,
+    new THREE.LineBasicMaterial({ color: 0x0000ff, depthTest: false })
+  );
   scene.add(pathLine);
 
-  // Rollender Kreis (Radius R), wird in updateScene positioniert/rotiert
+  // Spurpunkte (Points) – Geometrie wird in updateScene befüllt
+  const tpGeom = new THREE.BufferGeometry().setFromPoints([]);
+  tracePoints = new THREE.Points(
+    tpGeom,
+    new THREE.PointsMaterial({
+      color: 0x0000ff,
+      size: Math.max(0.04 * R, 0.03), // kleine Punkte; skalieren moderat mit R
+      sizeAttenuation: false          // ungefähr konstante Pixelwirkung
+    })
+  );
+  (tracePoints.material as THREE.PointsMaterial).depthTest = false;
+  scene.add(tracePoints);
+
+  // Rollender Kreis
   const circlePts: THREE.Vector3[] = [];
   const segs = 64;
   for (let i = 0; i <= segs; i++) {
@@ -98,55 +111,68 @@ function createSceneObjects() {
     circlePts.push(new THREE.Vector3(Math.cos(a) * R, Math.sin(a) * R, 0));
   }
   const circleGeom = new THREE.BufferGeometry().setFromPoints(circlePts);
-  circleLine = new THREE.LineLoop(circleGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
+  circleLine = new THREE.LineLoop(
+    circleGeom,
+    new THREE.LineBasicMaterial({ color: 0x000000 })
+  );
   scene.add(circleLine);
 
-  // Roter Punkt auf dem Kreis (Skalierung ~ R)
+  // Roter Spurpunkt
   const pointGeom = new THREE.CircleGeometry(0.1 * R, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   scene.add(pointMesh);
 
-  // Linie vom Zentrum zum Punkt
-  const lpGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-  lineToPoint = new THREE.Line(lpGeom, new THREE.LineBasicMaterial({ color: 0x000000 }));
-  scene.add(lineToPoint);
+  // Gerade d (Radius-Segment vom Zentrum zum Punkt)
+  const dGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  dLine = new THREE.Line(
+    dGeom,
+    new THREE.LineBasicMaterial({ color: 0x000000, depthTest: false })
+  );
+  scene.add(dLine);
 
   updateScene(0);
 }
 
 function updateScene(thetaRoll: number) {
-  if (!circleLine || !pointMesh || !lineToPoint || !pathLine) return;
+  if (!circleLine || !pointMesh || !dLine || !pathLine || !tracePoints) return;
 
-  const phiRad = (currentPhiDeg * Math.PI) / 180;
+  // phi = 0 ⇒ Winkel = -theta - π/2  (Start oben am Rad)
+  const center = circleCenter(thetaRoll);
+  const angle = -thetaRoll - Math.PI / 2;
 
   // Kreis-Transform
-  const center = circleCenter(thetaRoll);
   circleLine.position.copy(center);
   circleLine.rotation.z = -thetaRoll;
 
-  // Punkt auf dem Kreis (Start oben bei phi=0)
-  const angle = -thetaRoll + phiRad - Math.PI / 2;
+  // Spurpunkt
   const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(d);
   pointMesh.position.copy(center.clone().add(offset));
 
-  // Linie vom Zentrum zum Punkt (z=0 für scharfe Linie)
-  const linePts = [center.clone().setZ(0), pointMesh.position];
-  (lineToPoint.geometry as THREE.BufferGeometry).setFromPoints(linePts);
+  // Gerade d (Radius-Segment)
+  const dPts = [center.clone().setZ(0), pointMesh.position.clone().setZ(0)];
+  (dLine.geometry as THREE.BufferGeometry).setFromPoints(dPts);
 
-  // Pfad von 0 bis thetaRoll
+  // Pfad von 0 bis thetaRoll (Linie + Spurpunkte)
   const pathPts: THREE.Vector3[] = [];
   const start = Math.min(0, thetaRoll);
   const end = Math.max(0, thetaRoll);
   for (let th = start; th <= end + 1e-9; th += thetaStep) {
     const cx = R + R * th;
-    const a = -th + phiRad - Math.PI / 2;
+    const a = -th - Math.PI / 2; // phi=0
     const off = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(d);
     pathPts.push(new THREE.Vector3(cx, R, 0).add(off));
   }
+
+  // Linie aktualisieren
   const newPathGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
   pathLine.geometry.dispose();
   pathLine.geometry = newPathGeom;
+
+  // Spurpunkte aktualisieren
+  const tpGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
+  tracePoints.geometry.dispose();
+  tracePoints.geometry = tpGeom;
 }
 
 // Resize-Handling
@@ -166,17 +192,15 @@ function animate() {
 animate();
 
 // Public API für parent -> iframe postMessage
-// Matches: { theta, phi, d, R }
+// Neuer Aufruf: { theta, d, R }
 (window as any).updateTrochoid = (
   theta: number,   // roll/position, radians
-  phiDeg: number,  // point offset, degrees
   dAbs: number,    // absolute distance
   newR?: number    // optional new rolling radius
 ) => {
   if (typeof newR === 'number' && isFinite(newR) && newR > 0) {
     R = newR;
   }
-  currentPhiDeg = phiDeg;
   d = dAbs;
 
   // Boden an neues R anpassen
