@@ -93,8 +93,9 @@ function createSceneObjects() {
   // Stift
   {
     const pointGeom = new THREE.CircleGeometry(0.1 * r, 16); // Größe ~ r
-    const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false });
     pointMesh = new THREE.Mesh(pointGeom, pointMat);
+    pointMesh.renderOrder = 10; 
     scene.add(pointMesh);
   }
 
@@ -102,6 +103,7 @@ function createSceneObjects() {
   {
     const geom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
     lineToPoint = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x000000 }));
+    lineToPoint.renderOrder = 5; 
     scene.add(lineToPoint);
   }
 
