@@ -121,6 +121,7 @@ function createSceneObjects() {
   const pointGeom = new THREE.CircleGeometry(0.1 * R, 16);
   const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
+  pointMesh.renderOrder = 10;
   scene.add(pointMesh);
 
   // Gerade d (Radius-Segment vom Zentrum zum Punkt)
@@ -129,6 +130,7 @@ function createSceneObjects() {
     dGeom,
     new THREE.LineBasicMaterial({ color: 0x000000, depthTest: false })
   );
+  dLine.renderOrder = 5; 
   scene.add(dLine);
 
   updateScene(0);
