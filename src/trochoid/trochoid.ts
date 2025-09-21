@@ -119,7 +119,7 @@ function createSceneObjects() {
 
   // Roter Spurpunkt
   const pointGeom = new THREE.CircleGeometry(0.1 * R, 16);
-  const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const pointMat = new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false });
   pointMesh = new THREE.Mesh(pointGeom, pointMat);
   pointMesh.renderOrder = 10;
   scene.add(pointMesh);
