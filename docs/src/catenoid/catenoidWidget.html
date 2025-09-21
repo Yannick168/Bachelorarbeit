@@ -1,0 +1,197 @@
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" /><!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" />
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script> 
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload=
+"renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
+<div class="container my-4">
+    <!-- Title -->
+
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                Catenoid
+            </h3>
+        </div>
+    </div>
+    <!-- Formulas -->
+
+    <div class="row">
+        <div class="col-12 col-lg-10">
+            <p class="mb-2 fw-semibold">
+                Parametric representation
+            </p>
+            $$ \mathbf{x}(u,v)=\bigl(c\,\cosh(\tfrac{v}{c})\cos (u),\; c\,\cosh(\tfrac{v}{c})\sin (u),\; v\bigr), \quad u\in[0,2\pi),\; v\in\mathbb{R}. $$
+        </div>
+    </div>
+    <!-- Sliders + iFrame + Controls (eigene Row) -->
+
+    <div class="row mt-4">
+        <!-- Sliders -->
+
+        <div class="col-12 col-lg-5 mb-4">
+            <div class="p-3 bg-white rounded shadow-sm">
+                <!-- c (waist radius) -->
+
+                <div class="mb-3">
+                    <label for="c-c" class="form-label">Waist radius \(c\)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="c-c" class="form-range" min="0.2" max="3" step="0.01" value="1.00" />
+                        </div>
+
+                        <div class="col-auto" style="width: 7rem;">
+                            <input type="number" id="c-c-num" class="form-control" min="0.2" max="3" step="0.01" value="1.00" />
+                        </div>
+                    </div>
+                </div>
+                <!-- v half range (L): v in [-L, L] -->
+
+                <div class="mb-3">
+                    <label for="c-vh" class="form-label">Half length \(L\) with \(v\in[-L,L]\)</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="c-vh" class="form-range" min="0.5" max="6" step="0.1" value="2.0" />
+                        </div>
+
+                        <div class="col-auto" style="width: 7rem;">
+                            <input type="number" id="c-vh-num" class="form-control" min="0.5" max="6" step="0.1" value="2.0" />
+                        </div>
+                    </div>
+                </div>
+                <!-- Resolution: segments -->
+
+                <div class="mb-3">
+                    <label for="c-us" class="form-label">\(u\)-segments</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="c-us" class="form-range" min="8" max="128" step="1" value="30" />
+                        </div>
+
+                        <div class="col-auto" style="width: 7rem;">
+                            <input type="number" id="c-us-num" class="form-control" min="8" max="128" step="1" value="30" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label for="c-vs" class="form-label">\(v\)-segments</label>
+                    <div class="row gx-2 align-items-center">
+                        <div class="col">
+                            <input type="range" id="c-vs" class="form-range" min="8" max="128" step="1" value="30" />
+                        </div>
+
+                        <div class="col-auto" style="width: 7rem;">
+                            <input type="number" id="c-vs-num" class="form-control" min="8" max="128" step="1" value="30" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- iFrame + Controls -->
+
+        <div class="col-12 col-lg-7">
+            <div class="d-flex justify-content-center align-items-center mb-3">
+                <div class="ratio ratio-16x9" style="max-width: 900px; width: 100%;">
+                    <iframe id="catenoidFrame" class="w-100 h-100 border-0" allowfullscreen="allowfullscreen" name="catenoidFrame"></iframe>
+                </div>
+            </div>
+
+            <div>
+                <ul class="mb-0">
+                    <li>
+                        <strong>Left mouse button drag</strong>: Rotate scene
+                    </li>
+
+                    <li>
+                        <strong>Right mouse button drag</strong>: Pan
+                    </li>
+
+                    <li>
+                        <strong>Mouse wheel scroll</strong>: Zoom
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+/* <![CDATA[ */
+  const frame = document.getElementById('catenoidFrame');
+  frame.src = "https://yannick168.github.io/Bachelorarbeit/src/catenoid/catenoid.html?v=" + Date.now();
+
+  // *** IDs und Schlüssel durchgängig auf "c" ***
+  const els = {
+    c:      document.getElementById('c-c'),
+    cNum:   document.getElementById('c-c-num'),
+    L:      document.getElementById('c-vh'),
+    LNum:   document.getElementById('c-vh-num'),
+    us:     document.getElementById('c-us'),
+    usNum:  document.getElementById('c-us-num'),
+    vs:     document.getElementById('c-vs'),
+    vsNum:  document.getElementById('c-vs-num'),
+  };
+
+  // ---- helpers ----
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const midpoint = (min, max) => (parseFloat(min) + parseFloat(max)) / 2;
+  const decimalsFromStep = (s) => (String(s).includes(".") ? String(s).split(".")[1].length : 0);
+  const roundToStep = (value, min, step) => min + Math.round((value - min) / step) * step;
+  const debounce = (fn, ms=60) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a), ms); }; };
+
+  const postUpdate = debounce(() => {
+    const c  = parseFloat(els.cNum.value);
+    const L  = parseFloat(els.LNum.value);
+    const us = parseInt(els.usNum.value, 10);
+    const vs = parseInt(els.vsNum.value, 10);
+    if (!isFinite(c) || !isFinite(L) || !isFinite(us) || !isFinite(vs)) return;
+
+    // iFrame erwartet "c" (siehe dein catenoid.ts)
+    frame.contentWindow.postMessage({
+      type: 'update',
+      c,
+      vMin: -L,
+      vMax:  L,
+      uSegments: us,
+      vSegments: vs
+    }, '*');
+  }, 50);
+
+  function bindPair(rangeEl, numEl, { integers=false } = {}) {
+    const min = parseFloat(rangeEl.min);
+    const max = parseFloat(rangeEl.max);
+    const step = parseFloat(rangeEl.step || (integers ? "1" : "0.01"));
+    const decs = integers ? 0 : decimalsFromStep(step);
+
+    // Range -> Number
+    rangeEl.addEventListener('input', () => {
+      numEl.value = integers ? String(parseInt(rangeEl.value, 10)) : Number(rangeEl.value).toFixed(decs);
+      postUpdate();
+    });
+
+    // Number -> Range (Wert übernehmen, Slider mittig)
+    const applyNumber = () => {
+      let v = parseFloat(numEl.value);
+      if (!isFinite(v)) return;
+      v = clamp(v, min, max);
+      v = integers ? Math.round(v) : roundToStep(v, min, step);
+      numEl.value = integers ? String(v) : v.toFixed(decs);
+
+      rangeEl.value = midpoint(rangeEl.min, rangeEl.max); // Slider optisch zentrieren
+      postUpdate();
+    };
+    numEl.addEventListener('input',  applyNumber);
+    numEl.addEventListener('change', applyNumber);
+    numEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyNumber(); });
+  }
+
+  // *** Korrekte Zuordnung: els.c <-> els.cNum ***
+  bindPair(els.c,  els.cNum,  { integers:false });
+  bindPair(els.L,  els.LNum,  { integers:false });
+  bindPair(els.us, els.usNum, { integers:true  });
+  bindPair(els.vs, els.vsNum, { integers:true  });
+
+  // initial update
+  window.addEventListener('load', () => setTimeout(()=>postUpdate(), 300));
+/*]]>*/
+</script>
