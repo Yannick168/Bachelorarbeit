@@ -139,43 +139,54 @@ function createSceneObjects() {
 function updateScene(thetaRoll: number) {
   if (!circleLine || !pointMesh || !dLine || !pathLine || !tracePoints) return;
 
-  // phi = 0 ⇒ Winkel = -theta - π/2  (Start oben am Rad)
+  // Mittelpunkt des rollenden Kreises
   const center = circleCenter(thetaRoll);
-  const angle = -thetaRoll - Math.PI / 2;
 
-  // Kreis-Transform
+  // Kreis-Transform (Position + Rotation im Uhrzeigersinn)
   circleLine.position.copy(center);
   circleLine.rotation.z = -thetaRoll;
 
-  // Spurpunkt
-  const offset = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).multiplyScalar(d);
+  // Spurpunkt-Offset (ohne π/2):
+  // Δ(θ) = (-d sin θ, -d cos θ)
+  const s = Math.sin(thetaRoll);
+  const c = Math.cos(thetaRoll);
+  const offset = new THREE.Vector3(-d * s, -d * c, 0);
+
+  // Spurpunkt-Position
   pointMesh.position.copy(center.clone().add(offset));
 
-  // Gerade d (Radius-Segment)
+  // Radius-Segment (d-Linie) vom Mittelpunkt zum Spurpunkt
   const dPts = [center.clone().setZ(0), pointMesh.position.clone().setZ(0)];
   (dLine.geometry as THREE.BufferGeometry).setFromPoints(dPts);
 
-  // Pfad von 0 bis thetaRoll (Linie + Spurpunkte)
+  // Spurkurve 0 .. thetaRoll (Linie + Spurpunkte)
   const pathPts: THREE.Vector3[] = [];
   const start = Math.min(0, thetaRoll);
   const end = Math.max(0, thetaRoll);
+
   for (let th = start; th <= end + 1e-9; th += thetaStep) {
-    const cx = R + R * th;
-    const a = -th - Math.PI / 2; // phi=0
-    const off = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(d);
+    const cx = R + R * th;            // Mittelpunkt x = R + R*θ
+    const sy = Math.sin(th);
+    const cy = Math.cos(th);
+    const off = new THREE.Vector3(-d * sy, -d * cy, 0); // Δ(th)
     pathPts.push(new THREE.Vector3(cx, R, 0).add(off));
   }
 
   // Linie aktualisieren
-  const newPathGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
-  pathLine.geometry.dispose();
-  pathLine.geometry = newPathGeom;
+  {
+    const newPathGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
+    pathLine.geometry.dispose();
+    pathLine.geometry = newPathGeom;
+  }
 
   // Spurpunkte aktualisieren
-  const tpGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
-  tracePoints.geometry.dispose();
-  tracePoints.geometry = tpGeom;
+  {
+    const tpGeom = new THREE.BufferGeometry().setFromPoints(pathPts);
+    tracePoints.geometry.dispose();
+    tracePoints.geometry = tpGeom;
+  }
 }
+
 
 // Resize-Handling
 window.addEventListener('resize', () => {
