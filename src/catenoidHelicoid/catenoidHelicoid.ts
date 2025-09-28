@@ -1,13 +1,11 @@
 /*
- * Author:          Yannick Häberlin (Refactor angepasst an catenoid.ts-Stil)
- * Letztes Update:  28.09.2025
- * Beschreibung:    Catenoid–Helicoid Isometrie in gleicher Struktur wie catenoid.ts
+ * Catenoid–Helicoid Isometrie – an catenoid.ts angelehnt (korrigierte Version)
  */
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-// ---- Szene/Renderer/Kamera (an catenoid.ts angelehnt) ----
+// ---- Szene/Renderer/Kamera ----
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
@@ -18,37 +16,31 @@ const renderer = new THREE.WebGLRenderer(
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.01,
-  1000
-);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
 camera.position.set(6, 6, 6);
 
-// ---- Beleuchtung (wie in catenoid.ts) ----
+// ---- Licht ----
 scene.add(new THREE.AmbientLight(0xffffff, 0.85));
 const dir = new THREE.DirectionalLight(0xffffff, 0.6);
 dir.position.set(5, 10, 8);
 scene.add(dir);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x888899, 0.25));
 
-// ---- Achsenhilfe (sichtbar) ----
+// ---- Achsen + Controls ----
 const axes = new THREE.AxesHelper(1.5);
 axes.visible = true;
 scene.add(axes);
 
-// ---- OrbitControls ----
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0, 0);
 
-// ---- Parameter & Typen (analog zu catenoid.ts) ----
+// ---- Parameter ----
 type IsoParams = {
   alpha: number;     // 0: Catenoid, π/2: Helicoid
-  c: number;         // waist radius / Skalierung
-  vMin: number;      // untere v-Grenze
-  vMax: number;      // obere v-Grenze
+  c: number;         // Skalierung / "waist radius"
+  vMin: number;
+  vMax: number;
   uSegments: number;
   vSegments: number;
 };
@@ -62,7 +54,7 @@ let params: IsoParams = {
   vSegments: 30,
 };
 
-// ---- Materialien (Front: Vertexfarben, Back: Grau) ----
+// ---- Materialien ----
 const matFront = new THREE.MeshPhongMaterial({
   vertexColors: true,
   side: THREE.FrontSide,
@@ -80,7 +72,7 @@ let meshFront: THREE.Mesh<THREE.BufferGeometry, THREE.Material> | null = null;
 let meshBack:  THREE.Mesh<THREE.BufferGeometry, THREE.Material> | null = null;
 let wireframe: THREE.LineSegments<THREE.WireframeGeometry, THREE.LineBasicMaterial> | null = null;
 
-// ---- Geometrie-Erzeugung (Struktur wie in catenoid.ts) ----
+// ---- Geometrie ----
 function makeGeometry(p: IsoParams): THREE.BufferGeometry {
   const { alpha, c, vMin, vMax, uSegments, vSegments } = p;
 
@@ -95,27 +87,23 @@ function makeGeometry(p: IsoParams): THREE.BufferGeometry {
     const tj = j / vSegments;
     const v  = vMin + (vMax - vMin) * tj;
 
-    // Skaliert für cosh/sinh mit c (wie im bisherigen Isometrie-Code)
-    const vs   = v / c;
-    const ch   = Math.cosh(vs);
-    const sh   = Math.sinh(vs);
+    const vs = v / c;
+    const ch = Math.cosh(vs);
+    const sh = Math.sinh(vs);
 
     for (let i = 0; i <= uSegments; i++) {
-      const u  = 2 * Math.PI * (i / uSegments);
+      const u = 2 * Math.PI * (i / uSegments);
 
-      // Assoziierte Familie: X_alpha(u,v)
+      // X_alpha(u,v)
       const x = c * ( Math.cos(u) * ch * cosA + Math.sin(u) * sh * sinA );
       const y = c * ( Math.sin(u) * ch * cosA - Math.cos(u) * sh * sinA );
       const z =       v * cosA + (c * u) * sinA;
 
       positions.push(x, y, z);
 
-      // Farbverlauf entlang v (wie in catenoid.ts)
+      // Farbverlauf entlang v
       const s = tj;
-      const r = s;
-      const g = 1.0 - s;
-      const b = 0.15;
-      colors.push(r, g, b);
+      colors.push(s, 1.0 - s, 0.15);
     }
   }
 
@@ -134,33 +122,27 @@ function makeGeometry(p: IsoParams): THREE.BufferGeometry {
   geom.setAttribute("color",    new THREE.Float32BufferAttribute(colors,    3));
   geom.setIndex(indices);
   geom.computeVertexNormals();
-  geom.center(); // wie in catenoid.ts
+  geom.center();
   return geom;
 }
 
-// ---- Initialisierung (wie initialBuild in catenoid.ts) ----
+// ---- Initialisierung ----
 function initialBuild() {
   const geom = makeGeometry(params);
-
   meshFront = new THREE.Mesh(geom, matFront);
   meshBack  = new THREE.Mesh(geom, matBack);
   scene.add(meshFront, meshBack);
 
-  wireframe = new THREE.LineSegments(
-    new THREE.WireframeGeometry(geom),
-    new THREE.LineBasicMaterial({ color: 0x000000 })
-  );
+  wireframe = new THREE.LineSegments(new THREE.WireframeGeometry(geom), new THREE.LineBasicMaterial({ color: 0x000000 }));
   wireframe.renderOrder = 1;
   scene.add(wireframe);
 
-  // Widget-Handshake (optional)
-  try {
-    window.parent?.postMessage({ type: "ready" }, "*");
-  } catch {}
+  // Ready-Handshake (für Widget)
+  try { window.parent?.postMessage({ type: "ready" }, "*"); } catch {}
 }
 initialBuild();
 
-// ---- Rebuild (wie in catenoid.ts) ----
+// ---- Rebuild ----
 function rebuild() {
   if (!meshFront || !meshBack || !wireframe) return;
 
@@ -170,43 +152,38 @@ function rebuild() {
   meshBack.geometry.dispose();
   wireframe.geometry.dispose();
 
-  meshFront.geometry  = newGeom;
-  meshBack.geometry   = newGeom;
-  wireframe.geometry  = new THREE.WireframeGeometry(newGeom);
+  meshFront.geometry = newGeom;
+  meshBack.geometry  = newGeom;
+  wireframe.geometry = new THREE.WireframeGeometry(newGeom);
 
   controls.target.set(0, 0, 0);
 }
 
-// ---- postMessage-Listener (kompatibel zu Widget & Legacy) ----
-window.addEventListener(
-  "message",
-  (ev: MessageEvent) => {
-    const msg = ev.data;
-    if (!msg || typeof msg !== "object") return;
+// ---- postMessage-Listener ----
+window.addEventListener("message", (ev: MessageEvent) => {
+  const msg = ev.data;
+  if (!msg || typeof msg !== "object") return;
 
-    // 1) Neues, gebündeltes Update-Format (Widget sendet {alpha,c,L,uSegments,vSegments})
-    if (msg.type === "update") {
-      if (typeof msg.alpha === "number")      params.alpha     = msg.alpha;
-      if (typeof msg.c     === "number")      params.c         = Math.max(0.05, msg.c);
-      if (typeof msg.L     === "number")     { params.vMin     = -msg.L; params.vMax = msg.L; }
-      if (typeof msg.vMin  === "number")      params.vMin      = msg.vMin; // optional unterstützt
-      if (typeof msg.vMax  === "number")      params.vMax      = msg.vMax; // optional unterstützt
-      if (typeof msg.uSegments === "number")  params.uSegments = Math.max(4, Math.floor(msg.uSegments));
-      if (typeof msg.vSegments === "number")  params.vSegments = Math.max(4, Math.floor(msg.vSegments));
-      if (params.vMin > params.vMax) [params.vMin, params.vMax] = [params.vMax, params.vMin];
-      rebuild();
-    }
+  if (msg.type === "update") {
+    if (typeof msg.alpha === "number")      params.alpha     = msg.alpha;
+    if (typeof msg.c     === "number")      params.c         = Math.max(0.05, msg.c);
+    if (typeof msg.L     === "number")     { params.vMin     = -msg.L; params.vMax = msg.L; }
+    if (typeof msg.vMin  === "number")      params.vMin      = msg.vMin;
+    if (typeof msg.vMax  === "number")      params.vMax      = msg.vMax;
+    if (typeof msg.uSegments === "number")  params.uSegments = Math.max(4, Math.floor(msg.uSegments));
+    if (typeof msg.vSegments === "number")  params.vSegments = Math.max(4, Math.floor(msg.vSegments));
+    if (params.vMin > params.vMax) [params.vMin, params.vMax] = [params.vMax, params.vMin];
+    rebuild();
+  }
 
-    // 2) Rückwärtskompatibel: nur Alpha-Update
-    if (msg.type === "alpha" && typeof msg.alpha === "number") {
-      params.alpha = msg.alpha;
-      rebuild();
-    }
-  },
-  false
-);
+  // Legacy: nur Alpha
+  if (msg.type === "alpha" && typeof msg.alpha === "number") {
+    params.alpha = msg.alpha;
+    rebuild();
+  }
+}, false);
 
-// ---- Öffentliche API (kompatibel zu deiner bisherigen HTML/Widget-Seite) ----
+// ---- Öffentliche API (direkt anwenden, kein postMessage) ----
 (window as any).updateCatenoidHelicoid = (newAlpha: number) => {
   if (typeof newAlpha === "number") {
     params.alpha = newAlpha;
@@ -216,11 +193,18 @@ window.addEventListener(
 (window as any).updateCH = (data: {
   alpha?: number; c?: number; L?: number; vMin?: number; vMax?: number; uSegments?: number; vSegments?: number;
 }) => {
-  const msg = { type: "update", ...data };
-  window.postMessage(msg, "*");
+  if (typeof data.alpha === "number")      params.alpha     = data.alpha;
+  if (typeof data.c     === "number")      params.c         = Math.max(0.05, data.c);
+  if (typeof data.L     === "number")     { params.vMin     = -data.L; params.vMax = data.L; }
+  if (typeof data.vMin  === "number")      params.vMin      = data.vMin;
+  if (typeof data.vMax  === "number")      params.vMax      = data.vMax;
+  if (typeof data.uSegments === "number")  params.uSegments = Math.max(4, Math.floor(data.uSegments));
+  if (typeof data.vSegments === "number")  params.vSegments = Math.max(4, Math.floor(data.vSegments));
+  if (params.vMin > params.vMax) [params.vMin, params.vMax] = [params.vMax, params.vMin];
+  rebuild();
 };
 
-// ---- Resize (wie in catenoid.ts) ----
+// ---- Resize + Renderloop ----
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -228,7 +212,6 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ---- Render-Loop ----
 function animate() {
   requestAnimationFrame(animate);
   controls.update();

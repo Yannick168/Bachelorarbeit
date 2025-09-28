@@ -6,35 +6,12 @@
   <title>Catenoid–Helicoid</title>
   <style>
     html, body { height: 100%; margin: 0; background: #fff; }
-    /* Vollflächiges Canvas – wie in deiner Catenoid-Seite */
     #canvas { display: block; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <!-- Wichtig: dieselbe ID, die das TS erwartet -->
   <canvas id="canvas"></canvas>
-
-  <!-- Für DEV: TS direkt; für PROD bitte auf das gebaute JS zeigen -->
+  <!-- Dev: TypeScript direkt; Prod/Build: auf das gebaute JS umstellen -->
   <script type="module" src="./catenoidHelicoid.ts"></script>
-
-  <!-- Externe Steuerung via Widget/iFrame bleibt erhalten -->
-  <script>
-    // Kompatibel zu bestehendem Widget: {type:'alpha'} und {type:'update', ...}
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
-
-      if (data.type === 'alpha' && typeof data.alpha === 'number') {
-        // Legacy-API (wird vom TS bereitgestellt)
-        window.updateCatenoidHelicoid?.(data.alpha);
-      }
-
-      if (data.type === 'update') {
-        // Neues, gebündeltes Update: { alpha, c, L, uSegments, vSegments }
-        // (TS definiert window.updateCH)
-        window.updateCH?.(data);
-      }
-    });
-  </script>
 </body>
 </html>
