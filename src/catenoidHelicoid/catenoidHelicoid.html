@@ -10,6 +10,20 @@
     rel="stylesheet"
   >
 
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden; 
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
 </head>
 <body>
   <!-- WICHTIG: exakt diese ID -->
@@ -27,7 +41,6 @@
         window.updateCatenoidHelicoid?.(alpha); // rückwärtskompatibel
       }
       if (data?.type === 'update') {
-        // neues gebündeltes Update: { alpha, c, L, uSegments, vSegments }
         window.updateCH?.(data);
       }
     });
