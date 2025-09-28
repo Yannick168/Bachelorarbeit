@@ -1,7 +1,7 @@
 #version 300 es
 precision highp float;
 
-in vec3 vUV;
+in vec3 vObjCoord;
 
 uniform mat4  uModelInverse;
 uniform int   uOrthographic;
@@ -289,7 +289,7 @@ void axisCoeffsZ(float r, out float c[20]) {
 void main() {
   // Box-Kanten overlay
   if (uShowBox) {
-    float d  = edgeDistance(vUV, uHalf);
+    float d  = edgeDistance(vObjCoord, uHalf);
     float aa = fwidth(d);
     float m  = 1.0 - smoothstep(uEdgeThickness - aa, uEdgeThickness + aa, d);
     if (m > 0.0) {
@@ -299,7 +299,7 @@ void main() {
   }
 
   // stabiler Ray im Objektraum
-  vec3 ro = vUV;
+  vec3 ro = vObjCoord;
 
   // Kamera: Position (w=1) und -Z Richtung (w=0) in Objektraum
   vec3 camPos = (uModelInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;

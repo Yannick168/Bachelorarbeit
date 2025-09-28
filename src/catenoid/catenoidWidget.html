@@ -21,10 +21,10 @@
             <p class="mb-2 fw-semibold">
                 Parametric representation
             </p>
-            $$ \mathbf{x}(u,v)=\bigl(c\,\cosh(\tfrac{v}{c})\cos (u),\; c\,\cosh(\tfrac{v}{c})\sin (u),\; v\bigr), \quad u\in[0,2\pi),\; v\in\mathbb{R}. $$
+            $$ X(u,v)=\bigl(c\,\cosh(\tfrac{v}{c})\cos (u),\; c\,\cosh(\tfrac{v}{c})\sin (u),\; v\bigr), \quad u\in[0,2\pi),\; v\in\mathbb{R}. $$
         </div>
     </div>
-    <!-- Sliders + iFrame + Controls (eigene Row) -->
+    <!-- Sliders + iFrame + Controls  -->
 
     <div class="row mt-4">
         <!-- Sliders -->
@@ -120,7 +120,6 @@
   const frame = document.getElementById('catenoidFrame');
   frame.src = "https://yannick168.github.io/Bachelorarbeit/src/catenoid/catenoid.html?v=" + Date.now();
 
-  // *** IDs und Schlüssel durchgängig auf "c" ***
   const els = {
     c:      document.getElementById('c-c'),
     cNum:   document.getElementById('c-c-num'),
@@ -146,7 +145,6 @@
     const vs = parseInt(els.vsNum.value, 10);
     if (!isFinite(c) || !isFinite(L) || !isFinite(us) || !isFinite(vs)) return;
 
-    // iFrame erwartet "c" (siehe dein catenoid.ts)
     frame.contentWindow.postMessage({
       type: 'update',
       c,
@@ -163,13 +161,11 @@
     const step = parseFloat(rangeEl.step || (integers ? "1" : "0.01"));
     const decs = integers ? 0 : decimalsFromStep(step);
 
-    // Range -> Number
     rangeEl.addEventListener('input', () => {
       numEl.value = integers ? String(parseInt(rangeEl.value, 10)) : Number(rangeEl.value).toFixed(decs);
       postUpdate();
     });
 
-    // Number -> Range (Wert übernehmen, Slider mittig)
     const applyNumber = () => {
       let v = parseFloat(numEl.value);
       if (!isFinite(v)) return;
@@ -185,13 +181,11 @@
     numEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyNumber(); });
   }
 
-  // *** Korrekte Zuordnung: els.c <-> els.cNum ***
   bindPair(els.c,  els.cNum,  { integers:false });
   bindPair(els.L,  els.LNum,  { integers:false });
   bindPair(els.us, els.usNum, { integers:true  });
   bindPair(els.vs, els.vsNum, { integers:true  });
 
-  // initial update
   window.addEventListener('load', () => setTimeout(()=>postUpdate(), 300));
 /*]]>*/
 </script>
