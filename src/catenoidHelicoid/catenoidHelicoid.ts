@@ -17,7 +17,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-camera.position.set(6, 6, 6);
+camera.position.set(6, 6, 0);
 
 // ---- Licht ----
 scene.add(new THREE.AmbientLight(0xffffff, 0.85));
